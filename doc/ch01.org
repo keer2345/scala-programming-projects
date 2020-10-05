@@ -17,7 +17,7 @@ Scala 混合了面向对象和函数式编程的语法，并且是静态类型�
 - 创建第一个项目
 
 * 设置环境
-Scala 程序被编译成 Java 字节码。因此，我们需要 JVM。还需要使用文编编辑器和 *Simple Build Tool (SBT)*。最广泛而且专业的 IDE 是 JetBrains 的 IntelliJ IDEA，它提供了语法高亮、自动补全、代码导航，并集成了 SBT 等等。东冉，也可以使用 Eclipse, Emacs, Vim, Atom, Sublime, VSCode。
+Scala 程序被编译成 Java 字节码。因此，我们需要 JVM。还需要使用文编编辑器和 *Simple Build Tool (SBT)* 。最广泛而且专业的 IDE 是 JetBrains 的 IntelliJ IDEA，它提供了语法高亮、自动补全、代码导航，并集成了 SBT 等等。东冉，也可以使用 Eclipse, Emacs, Vim, Atom, Sublime, VSCode。
 * 基础特性
 * 在终端运行Scala
 * 使用Scala终端
