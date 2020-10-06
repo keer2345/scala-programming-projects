@@ -1,17 +1,16 @@
-#+TITLE: Scala Programming Projects
-#+AUTHOR: Mikaël Valot, Nicolas Jorand
+# Scala Programming Projects
 
-#+BEGIN_QUOTE
-Build real world projects using popular Scala frameworks like Play, Akka, and Spark
+**AUTHOR:** *Mikaël Valot*, *Nicolas Jorand*
 
-Copyright © 2018 Packt Publishing
-#+END_QUOTE
+> Build real world projects using popular Scala frameworks like Play, Akka, and Spark
+> 
+> Copyright © 2018 Packt Publishing
 
-- [[https://books.google.com/books?id=aP1wDwAAQBAJ&printsec=frontcover&hl=zh-CN&source=gbs_ge_summary_r&cad=0#v=onepage&q&f=false][Book]]
-- [[https://github.com/PacktPublishing/Scala-Programming-Projects][Source Code]]
+- [Book](https://books.google.com/books?id=aP1wDwAAQBAJ&printsec=frontcover&hl=zh-CN&source=gbs_ge_summary_r&cad=0#v=onepage&q&f=false)
+- [Source Code](https://github.com/PacktPublishing/Scala-Programming-Projects)
 
 
-* Preface
+## Preface
 
 Scala 是类型安全（type-safe）的 JVM 语言，它结合了面向对象和函数式编程。本书从实际项目出发帮助你学习和实践 Scala，将学习如何使用基础工具、设置环境以及编写 Scala 程序。
 
@@ -19,6 +18,6 @@ Scala 是类型安全（type-safe）的 JVM 语言，它结合了面向对象和
 
 最后通过了解 Scala 的来龙去脉，可以应用 Scala 来解决各种实际问题。
 
-* Catalog
+## Catalog
 
-1. [[https://github.com/keer2345/scala-programming-projects/blob/main/doc/ch01.org][Chapter 1]]，编写第一个程序，解释环境的设置，来看一下最简单的 Scala 应用是怎么样的。
+- [Chapter 01](https://github.com/keer2345/scala-programmingprojects/blob/main/chapter01)，编写第一个程序，解释环境的设置，来看一下最简单的 Scala 应用是怎么样的。
