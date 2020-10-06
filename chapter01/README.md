@@ -1,4 +1,4 @@
-**Writing Your First Program**
+# Chapter 01: Writing Your First Program 
 
 Scala 始于 2001 年，顾名思义，它是可扩展（Scalable）的语言，可以将其用于小的脚本或者大型企业应用。
 
@@ -367,7 +367,60 @@ val rect: Rectangle = Rectangle@105e4da1
 scala> rect.description
 val res42: String = Shape at (0, 3) - Rectangle 4 * 5
 ```
+
+关键字 `super` 表示调用父类成员，`this` 表示调用当前类的成员：
+```class
+scala> :paste
+// Entering paste mode (ctrl-D to finish)
+
+class Rectangle(x: Int, y: Int, val width: Int, val height: Int)
+     extends Shape(x, y) {
+     override def description: String = {
+       super.description + s" - Rectangle " + width + " * " + height
+     }
+     def descThis: String = this.description
+     def descSuper: String = super.description
+}
+
+
+
+// Exiting paste mode, now interpreting.
+
+class Rectangle
+
+scala> val rect = new Rectangle(x=0, y=3, width=5, height = 7)
+val rect: Rectangle = Rectangle@7dfdf6a7
+
+scala> rect.description
+val res45: String = Shape at (0, 3) - Rectangle 5 * 7
+
+scala> rect.descThis
+val res46: String = Shape at (0, 3) - Rectangle 5 * 7
+
+scala> rect.descSuper
+val res49: String = Shape at (0, 3)
+```
 ### 抽象类
+抽象类是指包含有多个抽象成员的类。抽象成员是指没有具体实现的属性或方法。我们不可以实例化抽象类，必须创建它的子类来实现所有的抽象成员。
+```scala
+scala> abstract class Shape(val x: Int, val y: Int) {
+     |   val area: Double
+     |   def description: String
+     | }
+class Shape
+
+scala> class Rectangle(x: Int, y: Int, val width: Int, val height: Int) extends Shape(x, y) {
+     |   val area: Double = width * height
+     |   def description: String = "Rectangle " +  width + " * " + height
+     | }
+class Rectangle
+```
+
+类 `Shape` 是抽象的，不能直接实例化，必须创建子类 `Rectangle` 或者其他子类来实例化。`Shape` 定义了两个成员 `x` 和 `y`，还有两个抽象成员 `area` 和 `description`，子类 `Rectangle` 实现了这两个抽象成员。
+
+> 当实现抽象成员的时候，我们可以使用前缀 `override`，当没有必要，以保持代码的简洁。当然，如果随后在父类中实现了抽象方法，编译器将帮助你找到所有的实现它的子类，如果使用了 `override` 将不会执行此操作。
+
+
 ### 特质Trait
 ### Scala类的等级
 ### Case Class

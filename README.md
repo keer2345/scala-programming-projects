@@ -20,4 +20,4 @@ Scala 是类型安全（type-safe）的 JVM 语言，它结合了面向对象和
 
 ## Catalog
 
-- [Chapter 01](https://github.com/keer2345/scala-programmingprojects/blob/main/chapter01)，编写第一个程序，解释环境的设置，来看一下最简单的 Scala 应用是怎么样的。
+- [Chapter 01](https://github.com/keer2345/scala-programming-projects/tree/main/chapter01)，编写第一个程序，解释环境的设置，来看一下最简单的 Scala 应用是怎么样的。
