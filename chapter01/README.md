@@ -481,7 +481,64 @@ val res51: String = Coordinates ( 0, 3 ) - Rectangle 4 * 5
 
 重写这些方法是非常乏味的。幸运的是，Scala 提供了特别的构造，称为 `case class`，它能为我们自动重载方法。
 ### Case Class
+
+Scala 里，通过 case class 定义了很多数据结构。`case class` 有多个不可变的属性，并提供了几个内建函数：
+
+``` scala
+scala> case class Person(name: String, age: Int)
+class Person
+
+scala> val mikaelNew = new Person("Mikael", 41)
+val mikaelNew: Person = Person(Mikael,41)
+
+scala> val mikael = Person("Mikael",41)
+val mikael: Person = Person(Mikael,41)
+
+scala> mikael == mikaelNew
+val res55: Boolean = true
+
+scala> val name = mikael.name
+val name: String = Mikael
+
+scala> val nicolas = mikael.copy(name = "Nicolas")
+val nicolas: Person = Person(Nicolas,41)
+
+scala> nicolas.toString()
+val res58: String = Person(Nicolas,41)
+```
+
 ### 伴生对象
+类可以拥有伴生对象，必须声明在和类同一个文件中，在类的伴生名称前使用 `object` 关键词。伴生对象是单例的 —— 在 JVM 中该对象只有一个实例。它由自己的类型并且没有伴生类的实例。
+
+对象定义静态函数或者值与类是紧密关联伴生的，如果你熟悉 Java，它就类似关键词 `static`：在 Scala 里，所有的静态成员被声明在伴生对象内部。
+
+在伴生对象中的一些函数有着特别的意义：`apply` 函数是类的构造器，通常可以省略它的名称 `apply`：
+
+``` scala
+case class City(name: String, urbanArea: Int)
+object City {
+     val London = City("London", 1738)
+     val Lausanne = City("Lausanne", 41)
+}
+
+case class Person(firstName: String, lastName: String, city: City)
+object Person {
+    def apply(fullName: String, city: City): Person = {
+    val splitted = fullName.split(" ")
+    new Person(firstName = splitted(0), lastName = splitted(1), city = city)
+    }
+}
+
+// Uses the default apply method
+val m1 = Person("Mikael", "Valot", City.London)
+
+// Call apply with fullName
+val m2 = Person("Mikael Valot", City.London)
+
+// We can omit 'apply'
+val n = Person.apply("Nicolas Jorand", City.Lausanne)
+```
+
 # 使用Scala终端
 
 # 创建第一个项目
