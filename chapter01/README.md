@@ -422,6 +422,52 @@ class Rectangle
 
 
 ### 特质Trait
+特质很像抽象类，它可以说明多个抽象或者其他成员并可继承。但不能实例化。不同的是抽象类只能继承一个，而特质可以混入（**mixin**）一个到多个。 另外，特质不能带构造参数。
+
+``` scala
+scala> trait Description {
+     |   def description: String
+     | }
+trait Description
+
+scala> trait Coordinates extends Description {
+     |   def x: Int
+     |   def y: Int
+     |
+     |   def description: String =
+     |     "Coordinates ( " + x + ", " + y + " )"
+     | }
+trait Coordinates
+
+scala> trait Area {
+     |   def area: Double
+     | }
+trait Area
+
+scala> class Rectangle(val x: Int,
+     |   val y: Int,
+     |   val width: Int,
+     |   val height: Int) extends Coordinates with Description with Area {
+     |
+     |   val area: Double = width * height
+     |   override def description: String =
+     |     super.description + " - Rectangle " + width + " * " + height
+     | }
+class Rectangle
+
+scala> val rect = new Rectangle(0, 3, 4, 5)
+val rect: Rectangle = Rectangle@7d0f3227
+
+scala> rect.description
+val res51: String = Coordinates ( 0, 3 ) - Rectangle 4 * 5
+```
+
+类 `Rectangle` 混入了特质 `Coordinates`, `Description` 和 `Area`，我们需要先使用 `extends` 继承 `trait` 或 `class`，再用关键词 `with` 混入其他他特质。
+
+注意，`Coordinates` 也混入了特质 `Description`，并提供了默认实现。当我们有一个 `Shape` 类时，我们重载 `Rectangle` 中的实现，通过 `super.description` 调用 `trait Coordinates` 中的 `description`。
+
+另一个有意思的地方是，你可以使用 `val` 来实现 `trait Area` 的抽象方法，`Area` 中我们定义了 `def area: Double`，并在 `Rectangle` 中用 `val area: Double` 实现它。这是用 `def` 定义抽象成员的良好实践。这样，特质的定义者这样决定使用方法还是变量来定义它。
+
 ### Scala类的等级
 ### Case Class
 ### 伴生对象
