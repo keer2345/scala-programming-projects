@@ -469,6 +469,17 @@ val res51: String = Coordinates ( 0, 3 ) - Rectangle 4 * 5
 另一个有意思的地方是，你可以使用 `val` 来实现 `trait Area` 的抽象方法，`Area` 中我们定义了 `def area: Double`，并在 `Rectangle` 中用 `val area: Double` 实现它。这是用 `def` 定义抽象成员的良好实践。这样，特质的定义者这样决定使用方法还是变量来定义它。
 
 ### Scala类的等级
+所有的 Scala 类型都是继承内建的 `Any` 类型，它是根类型，有两个直接的子类型：
+- `AnyVal`，它是所有的值类型的根类，这些类型是 JVM 中的原始类型。
+- `AnyRef`，对象类型的根类，别名是 `java.lang.Object`。
+- 变量类型为 `AnyVal` 直接包含值，相对于 `AnyRef` 类型的变量包含存储在内存的对象地址。
+
+当我们定义了新的类，它直接继承 `AnyRef`，拥有了 `Object` 中默认方法的实现。重要的方法如下：
+- `def toString: String` 返回对象的字符串表示，调用并打印 `println`，默认的实现返回类的名字和对象的内存地址。
+- `def equals(obj: Object): Boolean` 如果对象与另一个对象相等，则返回 `true`，否则返回 `false`。该方法相对于 `==`。
+- `def hashCode: Int` 无论将对象放在 `Set` 还是将它当做关键词放在 `Map`。默认的是实现是基于对象的地址。如果想要更好的在 `Set` 或 `Map` 分配数据可以重载方法，可以提升集合的性能。然而，如果这样做，必须确保 `hashCode` 与 `equal` 一致，如果两个对象是相等（equal）的，他们的 `hashCode` 必须也是相等的。
+
+重写这些方法是非常乏味的。幸运的是，Scala 提供了特别的构造，称为 `case class`，它能为我们自动重载方法。
 ### Case Class
 ### 伴生对象
 # 使用Scala终端
