@@ -539,7 +539,53 @@ val m2 = Person("Mikael Valot", City.London)
 val n = Person.apply("Nicolas Jorand", City.Lausanne)
 ```
 
-# 使用Scala终端
 
 # 创建第一个项目
+## 创建项目
+我们可以通过 IntelliJ IDEA 创建 Scala 项目，也可以通过 SBT 创建：
+
+```
+> sbt new scala/scala-seed.g8
+[warn] insecure HTTP request is deprecated 'http://maven.aliyun.com/nexus/content/groups/public/'; switch to HTTPS or opt-in as ("osc" at "http://maven.aliyun.com/nexus/content/groups/public/").withAllowInsecureProtocol(true)
+
+A minimal Scala project. 
+
+name [Scala Seed Project]: Example
+
+Template applied in ~/example
+```
+
+```
+> cd example
+> tree
+.
+├── build.sbt
+├── project
+│   ├── Dependencies.scala
+│   └── build.properties
+└── src
+    ├── main
+    │   └── scala
+    │       └── example
+    │           └── Hello.scala
+    └── test
+        └── scala
+            └── example
+                └── HelloSpec.scala
+```
+
+## 创建Main对象
+`src/main/scala/Main.scala`:
+
+``` scala
+object Main extends App {}
+```
+运行项目：
+```
+sbt run
+```
+
+## 编写第一个测试单元
+## 实现另一个特性
+## 实现Main方法
 # 总结
