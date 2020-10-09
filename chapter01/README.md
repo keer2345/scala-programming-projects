@@ -586,6 +586,93 @@ sbt run
 ```
 
 ## 编写第一个测试单元
-## 实现另一个特性
+TDD 在书写效率上很强大，它有三个规则：
+
+1. 先不写任何生产代码，除非它在测试时发生了错误。
+1. 任何测试单元都不允许失败。
+1. 测试单元失败的话不允许再写更多的生产代码。
+
+Scala 的测试框架有很多，我们在这里选择简单的 [ScalaTest](https://www.scalatest.org/) 。
+
+添加 ScalaTest 库`build.sbt`:
+``` scala
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.0" % "test"
+```
+
+创建 `src/test/scala/MainSpec`:
+
+``` scala
+import org.scalatest.matchers.should.Matchers._
+import org.scalatest.wordspec.AnyWordSpec
+
+class MainSpec extends AnyWordSpec {
+  "A Person" when {
+    "be instantiated" should {
+      "with a age and name" in {
+        val john = Person(firstName = "John", lastName = "Smith", 42)
+        john.firstName should be("John")
+        john.lastName should be("Smith")
+        john.age should be(42)
+      }
+    }
+  }
+}
+```
+`src/main/scala/Person.class`:
+
+``` scala
+case class Person(firstName: String, lastName: String, age: Int) {}
+```
+运行测试：
+
+```
+sbt test
+```
+正常的话会出现类似如下测试结果：
+```
+... ...
+
+[info] MainSpec:
+[info] A Person
+[info]   when be instantiated
+[info]   - should with a age and name
+[info] Run completed in 586 milliseconds.
+[info] Total number of tests run: 1
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 1, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+```
+## 实现其他特性
+刚才，我们已经可以很好地表示一个人的姓名和年龄了，我们继续添加测试：
+`src/test/scala/MainSpec.scala`:
+
+``` scala
+    "companion object" should {
+      val (akira, peter, nick) =
+        (
+          Person(firstName = "Akira", lastName = "Sakura", age = 12),
+          Person(firstName = "Peter", lastName = "Müller", age = 34),
+          Person(firstName = "Nick", lastName = "Tagart", age = 52)
+        )
+      "return a list of adult person" in {
+        val ref = List(akira, peter, nick)
+        Person.filterAdult(ref) should be(List(peter, nick))
+      }
+    }
+```
+`src/main/scala/Person.scala`:
+
+``` scala
+case class Person(firstName: String, lastName: String, age: Int) {
+  def description =
+    s"$firstName $lastName is $age ${if (age < 1) "year" else "years"} old"
+}
+
+object Person {
+  def filterAdult(persons: List[Person]): List[Person] =
+    persons.filter(_.age >= 18)
+}
+```
+
 ## 实现Main方法
 # 总结
