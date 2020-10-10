@@ -24,7 +24,7 @@ class MainSpec extends AnyWordSpec {
         )
       "return a list of adult person" in {
         val ref = List(akira, peter, nick)
-        Person.filterAdult(ref) should be(List(peter, nick))
+        Person.filterAdult(ref) should be(List(nick, peter))
       }
     }
   }

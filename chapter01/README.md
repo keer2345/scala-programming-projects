@@ -675,4 +675,26 @@ object Person {
 ```
 
 ## 实现Main方法
+我们现在实现 `main` 方法：
+`src/main/scala/Main.scala`:
+
+``` scala
+object Main extends App {
+  val persons = List(
+    Person(firstName = "Akira", lastName = "Sakura", age = 12),
+    Person(firstName = "Peter", lastName = "Müller", age = 34),
+    Person(firstName = "Nick", lastName = "Tagart", age = 52)
+  )
+
+  val adults = Person.filterAdult(persons)
+  val descriptions = adults.map(_.description).mkString("\n\t")
+  println(s"The adults are \n\t$descriptions")
+}
+```
+
 # 总结
+这一章已到尾声，我们掌握了 Scala 基础并开始了第一个项目。使用 ScalaTest 的 TDD 方法来确保代码质量。下一章，我们将编写完整的程序，它是预测退休时间的金融应用。我们将继续使用 TDD 方法来开展项目，那将是最佳实践。
+
+
+|----|----|
+|[Content](https://github.com/keer2345/scala-programming-projects)|[Chapter 02](https://github.com/keer2345/scala-programming-projects/tree/main/chapter02)|
