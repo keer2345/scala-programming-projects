@@ -16,6 +16,41 @@ Scala 混合了面向对象和函数式编程的语法，并且是静态类型�
 - 使用 Scala Console 和 Worksheet
 - 创建第一个项目
 
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
+
+- [Chapter 01: Writing Your First Program](#chapter-01-writing-your-first-program)
+- [设置环境](#设置环境)
+- [基础特性](#基础特性)
+    - [SBT synchronization](#sbt-synchronization)
+    - [SBT太慢了？](#sbt太慢了)
+- [在终端进行Scala工作](#在终端进行scala工作)
+    - [在终端运行Scala](#在终端运行scala)
+        - [声明变量](#声明变量)
+        - [类型](#类型)
+        - [声明和调用函数](#声明和调用函数)
+        - [副作用](#副作用)
+        - [if-else表达式](#if-else表达式)
+    - [类](#类)
+        - [类的继承](#类的继承)
+        - [子类参数](#子类参数)
+        - [重写方法](#重写方法)
+        - [抽象类](#抽象类)
+        - [特质Trait](#特质trait)
+        - [Scala类的等级](#scala类的等级)
+        - [Case Class](#case-class)
+        - [伴生对象](#伴生对象)
+- [创建第一个项目](#创建第一个项目)
+    - [创建项目](#创建项目)
+    - [创建Main对象](#创建main对象)
+    - [编写第一个测试单元](#编写第一个测试单元)
+    - [实现其他特性](#实现其他特性)
+    - [实现Main方法](#实现main方法)
+- [总结](#总结)
+
+<!-- markdown-toc end -->
+
+
 # 设置环境
 
 Scala 程序被编译成 Java 字节码。因此，我们需要 JVM。还需要使用文编编辑器和 *Simple Build Tool (SBT)* 。最广泛而且专业的 IDE 是 JetBrains 的 IntelliJ IDEA，它提供了语法高亮、自动补全、代码导航，并集成了 SBT 等等。东冉，也可以使用 Eclipse, Emacs, Vim, Atom, Sublime, VSCode。
@@ -696,5 +731,7 @@ object Main extends App {
 这一章已到尾声，我们掌握了 Scala 基础并开始了第一个项目。使用 ScalaTest 的 TDD 方法来确保代码质量。下一章，我们将编写完整的程序，它是预测退休时间的金融应用。我们将继续使用 TDD 方法来开展项目，那将是最佳实践。
 
 
-|----|----|
-|[Content](https://github.com/keer2345/scala-programming-projects)|[Chapter 02](https://github.com/keer2345/scala-programming-projects/tree/main/chapter02)|
+> [Content](https://github.com/keer2345/scala-programming-projects)
+>
+> [Chapter 02](https://github.com/keer2345/scala-programming-projects/tree/main/chapter02)
+
