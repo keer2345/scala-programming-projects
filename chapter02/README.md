@@ -204,6 +204,7 @@ def foldLeft(z: Double)(op: (Double, A) => Double): Double
 ```
 (param1, param2, ..., paramN) => function body
 ```
+可以看到之前 `nextCapital` 的 `month` 参数没有了，在匿名函数中，最佳实践是对无用参数用下划线 （`_`）来表示。参数 `_` 不能在函数中使用，如果尝试用一个名称来代替 `_`，IntelliJ 将会出现下划线的警告，提示该参数是 `Declaration is never used` 的。
 
 ## 为聚集期编写测试单元
 ## 模拟退休计划
