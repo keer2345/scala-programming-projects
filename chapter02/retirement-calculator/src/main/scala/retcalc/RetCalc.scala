@@ -7,13 +7,12 @@ object RetCalc {
       netIncome: Int,
       currentExpenses: Int,
       initialCapital: Double
-  ) = {
+  ): Double = {
     val monthlySavings = netIncome - currentExpenses
 
-    def nextCapital(accumulated: Double, month: Int): Double =
+    (0 until nbOfMonths).foldLeft(initialCapital)((accumulated, _) =>
       accumulated * (1 + interestRate) + monthlySavings
-
-    (0 until nbOfMonths).foldLeft(initialCapital)(nextCapital)
+    )
   }
 
 }

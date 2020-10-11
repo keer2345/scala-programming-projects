@@ -102,7 +102,7 @@ object RetCalc {
       netIncome: Int,
       currentExpenses: Int,
       initialCapital: Double
-  ) = ???
+  ): Double = ???
 
 }
 ```
@@ -126,7 +126,7 @@ object RetCalc {
       netIncome: Int,
       currentExpenses: Int,
       initialCapital: Double
-  ) = {
+  ): Double = {
     val monthlySavings = netIncome - currentExpenses
 
     def nextCapital(accumulated: Double, month: Int): Double =
@@ -150,7 +150,7 @@ def foldLeft[z: B](op: (B, A)=>B): B
 def foldLeft(z: Double)(op: (Double, A) => Double): Double
 ```
 - 函数有两个参数列表，Scala 允许使用跟多的参数列表。每个列表有一个或多个参数。这不会改变函数的行为；它只是一种分离每个参数列表关注点的方法。
-- `op: (B, A) => B` 意思是 `op` 必须为带有类型为 `B` 和 `A` 两个参数的函数，并且返回值类型为 `B`。由于 `foldLeft` 调用另一个函数作为参数，我们称 `foldLeft` 为高阶函数（**highe order function**）。
+- `op: (B, A) => B` 意思是 `op` 必须为带有类型为 `B` 和 `A` 两个参数的函数，并且返回值类型为 `B`。由于 `foldLeft` 调用另一个函数作为参数，我们称 `foldLeft` 为**高阶函数**（highe order function）。
 
 如果我们将 `coll` 看做集合，`foldLeft` 将是这样的：
 1. 创建 `var acc = z`，然后调用 `op` 函数：`acc = op(acc, coll(0))`
@@ -179,6 +179,32 @@ def foldLeft(z: Double)(op: (Double, A) => Double): Double
 ```
 
 ## 重构生产代码
+依据 TDD 方法，测试通过后一般会重构代码。如果测试覆盖率良好，不必担心修改代码，因为任何错误都应该有测试来标记，这就是所谓的**红绿重构**（Red-Green-Refactor）周期。
+
+修改 `futureCapital` 函数的主体：
+
+``` scala
+  def futureCapital(
+      interestRate: Double,
+      nbOfMonths: Int,
+      netIncome: Int,
+      currentExpenses: Int,
+      initialCapital: Double
+  ): Double = {
+    val monthlySavings = netIncome - currentExpenses
+
+    (0 until nbOfMonths).foldLeft(initialCapital)((accumulated, _) =>
+      accumulated * (1 + interestRate) + monthlySavings
+    )
+  }
+```
+
+这里，我们在 `foldLeft` 调用内联的 `nextCapital`。Scala 中我们可以通过这样来定义**匿名函数**：
+
+```
+(param1, param2, ..., paramN) => function body
+```
+
 ## 为聚集期编写测试单元
 ## 模拟退休计划
 ### 编写失败的测试单元
