@@ -206,8 +206,154 @@ def foldLeft(z: Double)(op: (Double, A) => Double): Double
 ```
 可以看到之前 `nextCapital` 的 `month` 参数没有了，在匿名函数中，最佳实践是对无用参数用下划线 （`_`）来表示。参数 `_` 不能在函数中使用，如果尝试用一个名称来代替 `_`，IntelliJ 将会出现下划线的警告，提示该参数是 `Declaration is never used` 的。
 
-## 为聚集期编写测试单元
+## 进一步编写测试单元
+
+现在我们已经知道在退休时有多少资金，是时候再次用 `futureCapital` 来计算能有多少资金留给继承人了。
+
+在 `RetCalcSpec` 添加测试：
+
+``` scala
+class RetCalcSpec
+    extends AnyWordSpec
+    with Matchers
+    with TypeCheckedTripleEquals {
+  "RetCalc" when {
+    "futureCapital" should {
+
+      implicit val doubleEquality =
+        TolerantNumerics.tolerantDoubleEquality(0.0001)
+
+      "calculate the amount of savings I will have in n months" in {
+        // ...
+      }
+
+      "calculate how much savings will be left after having taken a pension for n months" in {
+        val actual =
+          RetCalc.futureCapital(
+            interestRate = 0.04 / 12,
+            nbOfMonths = 40 * 12,
+            netIncome = 0,
+            currentExpenses = 2000,
+            initialCapital = 541267.1990
+          )
+        val expected = 309867.53176
+        actual should ===(expected)
+      }
+    }
+  }
+}
+```
+
+所以，我们在退休的40年后，每个月开销一样并且没有任何收入的话，将有一笔客观的资金类给继承人。如果预留的资金是负数，意味着花光了继续，这是我们需要避免的。
+
+可以从 Scala Console 调用函数来尝试不同的值，以更加匹配个人的情况，通过不同的利率观察资金变负数的情况。
+
+请注意，在生产情况下，你将添加更多的测试来覆盖边界情况，以确保函数不会崩溃。就像我们[第三章](https://github.com/keer2345/scala-programming-projects/tree/main/chapter03)将要说到的*错误处理*，我们可以假设 `futureCapital` 的测试覆盖已足够 优秀。
+
 ## 模拟退休计划
+
+目前已经知道如何计算退休和死亡时的资金，将两个调用绑定到一个简单的函数会更好，此函数将一次性模拟退休计划。
+
+`RetCalcSpec`:
+``` scala
+class RetCalcSpec
+    extends AnyWordSpec
+    with Matchers
+    with TypeCheckedTripleEquals {
+
+  implicit val doubleEquality =
+    TolerantNumerics.tolerantDoubleEquality(0.0001)
+
+  "RetCalc" when {
+  
+    // ...
+
+    "simulatePlan" should {
+      "calculate the capital at retirement and capital after death" in {
+        val (capitalAtRetirement, capitalAfterDeath) = RetCalc.simulatePlan(
+          interestRate = 0.04 / 12,
+          nbOfMonthsSaving = 25 * 12,
+          nbOfMonthsInRetirement = 40 * 12,
+          netIncome = 3000,
+          currentExpenses = 2000,
+          initialCapital = 10000
+        )
+        capitalAtRetirement should ===(541267.1990)
+        capitalAfterDeath should ===(309867.5316)
+      }
+    }
+  }
+}
+```
+`RetCalc.scala`:
+``` scala
+  def simulatePlan(
+      interestRate: Double,
+      nbOfMonthsSaving: Int,
+      nbOfMonthsInRetirement: Int,
+      netIncome: Int,
+      currentExpenses: Int,
+      initialCapital: Double
+  ): (Double, Double) = ???
+```
+
+这时候测试是失败的，`simulatePlan` 函数必须返回两个值，最简单的方式是返回 `Tuple2`。Scala 中元组是不可变的数据结构并支持多种不同类型的对象，这些对象在元组中是固定的。就像属性没有特定名称的 `case class`。在类型论中，我们称元组或 `case class` 是**生产类型**（product type）。
+
+``` scala
+scala> val tuple3 = (1, "hello", 2.0)
+val tuple3: (Int, String, Double) = (1,hello,2.0)
+
+scala> tuple3._1
+val res0: Int = 1
+
+scala> tuple3._2
+val res1: String = hello
+
+scala> val (a, b, c) = tuple3
+val a: Int = 1
+val b: String = hello
+val c: Double = 2.0
+
+scala> a
+val res2: Int = 1
+
+scala> c
+val res3: Double = 2.0
+```
+
+元组最大长度为 22，可以通过 `_1`，`_2` 来访问元素。我们可以一次为元组的每个元素声明变量。
+
+``` scala
+  def simulatePlan(
+      interestRate: Double,
+      nbOfMonthsSaving: Int,
+      nbOfMonthsInRetirement: Int,
+      netIncome: Int,
+      currentExpenses: Int,
+      initialCapital: Double
+  ): (Double, Double) = {
+    val capitalAtRetirement = futureCapital(
+      interestRate = interestRate,
+      nbOfMonths = nbOfMonthsSaving,
+      netIncome = netIncome,
+      currentExpenses = currentExpenses,
+      initialCapital = initialCapital
+    )
+
+    val capitalAfterDeath = futureCapital(
+      interestRate = interestRate,
+      nbOfMonths = nbOfMonthsInRetirement,
+      netIncome = 0,
+      currentExpenses = currentExpenses,
+      initialCapital = capitalAtRetirement
+    )
+
+    (capitalAtRetirement, capitalAfterDeath)
+  }
+```
+
+现在测试通过了。
+
 ### 编写失败的测试单元
 ### 利用元组
 ### 实现simulatePlan
