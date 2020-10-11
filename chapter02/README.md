@@ -362,6 +362,140 @@ val res3: Double = 2.0
 
 
 # 计算何时退休
+
+尝试了 `simulatePlan` 函数之后，就想输入不同的月份来观察退休和死亡的结果。这将有利于找出最优的退休时间 `nbOfMonths`，以便于在退休后的日子里有足够的资金。
+
+## 测试失败的nbOfMonthsSaving
+
+``` scala
+    "nbOfMonthsSaving" should {
+      "calculate how long I need to save before I can retire" in {
+        val actual = RetCalc.nbOfMonthsSaving(
+          interestRate = 0.04 / 12,
+          nbOfMonthsInRetirement = 40 * 12,
+          netIncome = 3000,
+          currentExpenses = 2000,
+          initialCapital = 10000
+        )
+
+        val excepted = 23 * 12 + 1
+        actual should ===(excepted)
+      }
+    }
+```
+
+这个测试中，期望值有点难以计算。一种方法是使用 Excel 的 `NPM` 函数。另外，我们可以多次调用 `simulatePlan` 来计算，递增 `nbOfMonthsSaving` 来找出最优值。 
+
+## 编写函数体
+在函数编程中，我们避免变量的改变。在命令式语言中，可以通过使用 `while` 循环来实现 `nbOfMonthsSaving`，在 Scala 中也可以这样做，但是最佳时间是使用不可变的变量。一种很好的解决方案是使用递归：
+
+``` scala
+  def nbOfMonthsSaving(
+      interestRate: Double,
+      nbOfMonthsInRetirement: Int,
+      netIncome: Int,
+      currentExpenses: Int,
+      initialCapital: Double
+  ): Int = {
+    def loop(months: Int): Int = {
+      val (capitalAtRetirement, capitalAfterDeath) = simulatePlan(
+        interestRate = interestRate,
+        nbOfMonthsSaving = months,
+        nbOfMonthsInRetirement = nbOfMonthsInRetirement,
+        netIncome = netIncome,
+        currentExpenses = currentExpenses,
+        initialCapital = initialCapital
+      )
+      val returnValue =
+        if (capitalAfterDeath > 0.0) months else loop(months + 1)
+      returnValue
+    }
+    loop(0)
+  }
+```
+我们在函数体内部声明递归函数，它不可以在其他地方使用。`loop` 函数的 `months` 每次递增 1 ，直到计算出 `capitalAfterDeath` 为正数。`loop` 函数最初的值为 `months = 0`。
+
+现在，我们测试就可以通过了。
+
+## 理解尾部递归
+添加下面的测试：
+
+``` scala
+    "nbOfMonthsSaving" should {
+      "calculate how long I need to save before I can retire" in {
+        // ...
+      }
+
+      "not crash if the resulting nbOfMonths is very high" in {
+        val actual = RetCalc.nbOfMonthsSaving(
+          interestRate = 0.01 / 12,
+          nbOfMonthsInRetirement = 40 * 12,
+          netIncome = 3000,
+          currentExpenses = 2999,
+          initialCapital = 0
+        )
+        val expected = 8280
+        actual should ===(expected)
+      }
+    }
+```
+运行测试，将会跑出 `StackOverflowError`，这是因为每次 `loop` 被调用递归，本地的变量就会存储在 JVM 堆栈，而我们知道堆栈是很小的，很容易的满了。幸运的是，Scala 编译器中有一种机制可以自动的转换成尾部递归调用 `while` 循环。我们称在 `loop` 中调用 `loop` 的递归为尾部递归（tail-recursive）。
+
+我们可以很容易地将之前的代码转换成尾部递归。
+
+``` scala
+  def nbOfMonthsSaving(
+      interestRate: Double,
+      nbOfMonthsInRetirement: Int,
+      netIncome: Int,
+      currentExpenses: Int,
+      initialCapital: Double
+  ): Int = {
+    @tailrec
+    def loop(months: Int): Int = {
+      val (_, capitalAfterDeath) = simulatePlan(
+        interestRate = interestRate,
+        nbOfMonthsSaving = months,
+        nbOfMonthsInRetirement = nbOfMonthsInRetirement,
+        netIncome = netIncome,
+        currentExpenses = currentExpenses,
+        initialCapital = initialCapital
+      )
+      if (capitalAfterDeath > 0.0) months else loop(months + 1)
+    }
+
+    if (netIncome > currentExpenses) loop(0) else Int.MaxValue
+  }
+```
+
+通常来说，超过 100 次的递归都应该使用尾部递归，尾部递归使用 `@tailrec` 注解可以让编译器校验它是否是尾部递归。
+
+## 确保终止
+假设你的开销比赚的要多，将存不够钱退休，是指要成千上万年！像这样：
+
+``` scala
+    "nbOfMonthsSaving" should {
+      "calculate how long I need to save before I can retire" in {
+        // ...
+      }
+
+      "not crash if the resulting nbOfMonths is very high" in {
+        // ...
+      }
+
+      "not loop forever if I enter bad parameters" in {
+        val actual = RetCalc.nbOfMonthsSaving(
+          interestRate = 0.04 / 12,
+          nbOfMonthsInRetirement = 40 * 12,
+          netIncome = 1000,
+          currentExpenses = 2000,
+          initialCapital = 10000
+        )
+        actual should ===(Int.MaxValue)
+      }
+    }
+```
+
 # 使用市场利率
 # 打包应用 
 # 总结
