@@ -254,6 +254,8 @@ class RetCalcSpec
 
 目前已经知道如何计算退休和死亡时的资金，将两个调用绑定到一个简单的函数会更好，此函数将一次性模拟退休计划。
 
+### 编写失败的测试单元
+
 `RetCalcSpec`:
 ``` scala
 class RetCalcSpec
@@ -297,6 +299,8 @@ class RetCalcSpec
   ): (Double, Double) = ???
 ```
 
+### 利用元组
+
 这时候测试是失败的，`simulatePlan` 函数必须返回两个值，最简单的方式是返回 `Tuple2`。Scala 中元组是不可变的数据结构并支持多种不同类型的对象，这些对象在元组中是固定的。就像属性没有特定名称的 `case class`。在类型论中，我们称元组或 `case class` 是**生产类型**（product type）。
 
 ``` scala
@@ -322,6 +326,8 @@ val res3: Double = 2.0
 ```
 
 元组最大长度为 22，可以通过 `_1`，`_2` 来访问元素。我们可以一次为元组的每个元素声明变量。
+
+### 实现simulatePlan
 
 ``` scala
   def simulatePlan(
@@ -354,9 +360,6 @@ val res3: Double = 2.0
 
 现在测试通过了。
 
-### 编写失败的测试单元
-### 利用元组
-### 实现simulatePlan
 
 # 计算何时退休
 # 使用市场利率
