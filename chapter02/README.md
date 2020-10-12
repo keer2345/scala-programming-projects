@@ -497,5 +497,147 @@ val res3: Double = 2.0
 ```
 
 # 使用市场利率
+在我们的计算中，一直假设利率是常量，但是实际中复杂得多。用市场数据中的实际利率来对我们的退休计划获得更多信心，这将更为准确。为此，我们首先需要修改代码，以便使用可变的利率执行相同的计算。之后，我们将加载真实的市场数据，通过跟踪*标准普尔 500 指数*（S & P 500）来模拟基金的常规投资。
+
+## 定义代数数据类型
+为了支持可变利率，我们需要修改包含 `interestRate: Double` 参数的所有函数，相对于 `Double`，我们需要可以表示常量利率或一系列利率的类型。
+
+考虑两种类型 `A` 和 `B`，我们之前知道如何定义类型 `A` 和 `B`。生产上，我们可以使用元组定义，例如 `ab: (A, B)`，或 `case class`，例如 `case class MyProduct(a: A, b: B)`。
+
+换而言之，类型既可以是 `A` 也可以试 `B`，在 Scala 中我们使用 `sealed` 声明特质的继承：
+
+``` scala
+sealed trait Shape
+case class Circle(diameter: Double) extends Shape
+case class Rectangle(width: Double, height: Double) extends Shape
+```
+**代数数据类型**（Algebraic Data Type）是由求和类型和乘积类型组成的数据类型，用来定义数据结构。前面的代码，我们定义了代数类型 `Shape`，组成求和类型（sum type）—— `Shape` 可以是 `Circle` 或 `Rectangle`，以及乘积类型（product type）`Rectangle` —— 它有 width 和 height 。
+
+关键字 `sealed` 表示特质的子类必须声明在同一个 `.scala` 文件中，如果尝试在另一个文件声明一个类来继承 `sealed` 特质，编译器会拒绝。这是用来保证我们的继承树是完整的，正如我们稍后将看到的，它在使用模式匹配时的好处是很有意思的。
+
+回到我们的问题，我们定义一个代数数据类型 `Returns`：
+
+`src/main/scala/retcalc/Returns.scala`:
+
+``` scala
+package retcalc
+
+sealed trait Returns
+case class FixedReturns(annualRate: Double) extends Returns
+case class VariableReturns(returns: Vector[VariableReturn]) extends Returns
+case class VariableReturn(monthId: String, monthlyRate: Double)
+```
+
+对于 `VariableReturn`，我们保持月利率和标识 `monthId` （*2017.02* 标识 2017 年 2 月）。推荐使用向量 `Vector` 来构建一系列元素。`Vector` 在添加、插入（appending/inserting）元素以及通过索引访问元素方面比 `List` 快。
+
+## 筛选特定期间的回报
+当我们在很长时间（比如 1900 年到 2017 年）有 `VariableReturn`，可以使用较小周期来模拟 50 年的返回值.
+
+我们在 `VariableReturn` 类中创建方法，并返回包含特定时段的回报：
+
+`ReturnsSpec.scala`:
+
+``` scala
+package retcalc
+
+import org.scalactic.{Equality, TolerantNumerics, TypeCheckedTripleEquals}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
+class ReturnsSpec
+    extends AnyWordSpec
+    with Matchers
+    with TypeCheckedTripleEquals {
+
+  implicit val doubleEquality: Equality[Double] =
+    TolerantNumerics.tolerantDoubleEquality(0.0001)
+
+  "VariableReturns" when {
+    "formUntil" should {
+      "keep only a window of the returns" in {
+        val variableReturns = VariableReturns(Vector.tabulate(12) { i =>
+          val d = (i + 1).toDouble
+          VariableReturn(f"2017.$d%02.0f", d)
+        })
+
+        variableReturns should ===(
+          VariableReturns(
+            Vector(
+              VariableReturn("2017.01", 1.0),
+              VariableReturn("2017.02", 2.0),
+              VariableReturn("2017.03", 3.0),
+              VariableReturn("2017.04", 4.0),
+              VariableReturn("2017.05", 5.0),
+              VariableReturn("2017.06", 6.0),
+              VariableReturn("2017.07", 7.0),
+              VariableReturn("2017.08", 8.0),
+              VariableReturn("2017.09", 9.0),
+              VariableReturn("2017.10", 10.0),
+              VariableReturn("2017.11", 11.0),
+              VariableReturn("2017.12", 12.0)
+            )
+          )
+        )
+
+        variableReturns.fromUtils("2017.07", "2017.09").returns should ===(
+          Vector(
+            VariableReturn("2017.07", 7.0),
+            VariableReturn("2017.08", 8.0)
+          )
+        )
+
+        variableReturns.fromUtils("2017.10", "2018.01").returns should ===(
+          Vector(
+            VariableReturn("2017.10", 10.0),
+            VariableReturn("2017.11", 11.0),
+            VariableReturn("2017.12", 12.0)
+          )
+        )
+
+        val variableReturns2 = VariableReturns(
+          Vector(
+            VariableReturn("2017.09", 9.0),
+            VariableReturn("2017.10", 10.0),
+            VariableReturn("2017.11", 11.0),
+            VariableReturn("2017.12", 12.0),
+            VariableReturn("2018.01", 1.0),
+            VariableReturn("2018.02", 2.0),
+            VariableReturn("2018.03", 3.0)
+          )
+        )
+        variableReturns2.fromUtils("2017.10", "2018.02").returns should ===(
+          Vector(
+            VariableReturn("2017.10", 10.0),
+            VariableReturn("2017.11", 11.0),
+            VariableReturn("2017.12", 12.0),
+            VariableReturn("2018.01", 1.0)
+          )
+        )
+      }
+    }
+  }
+}
+```
+
+首先，我们生成一个 `returns` 的序列并通过 `Vector.tabulate` 赋值给 `variableReturns`，它生成 12 个元素，每个元素都通过匿名函数将参数 `i` 从 `0` 到 `1` 遍历。然后调用 `VariableReturn` 构造函数，生成字符串 `2017.01`，`2017.02` 等。
+
+函数 `fromUtils` 返回指定区间的 `VariableReturns`：
+
+``` scala
+case class VariableReturns(returns: Vector[VariableReturn]) extends Returns {
+  def fromUtils(monthIdFrom: String, monthIdUntil: String): VariableReturns =
+    VariableReturns(
+      returns
+        .dropWhile(_.monthId != monthIdFrom)
+        .takeWhile(_.monthId != monthIdUntil)
+    )
+}
+```
+
+## 模式匹配
+现在，我们可以表达变量 `returns`，我们需要修改 `futureCapital` 来传入 `Returns` 参数替代每月的 `Double` 类型的利率：
+
+
+
 # 打包应用 
 # 总结
