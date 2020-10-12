@@ -670,7 +670,84 @@ case class VariableReturns(returns: Vector[VariableReturn]) extends Returns {
   }
 ```
 
+在 `Returns.scala` 中创建单例：
 
+``` scala
+object Returns {
+  def monthlyRate(returns: Returns, month: Int): Double =
+    returns match {
+      case FixedReturns(r) => r / 12
+    }
+}
+```
+
+在 `ReturnsSpec` 中创建测试单元：
+
+``` scala
+  "Returns" when {
+    "monthlyRate" should {
+      "return a fixed rate for a FixedReturn" in {
+        Returns.monthlyRate(FixedReturns(0.04), 0) should ===(0.04 / 12)
+        Returns.monthlyRate(FixedReturns(0.04), 10) should ===(0.04 / 12)
+      }
+
+      val variableReturns = VariableReturns(
+        Vector(VariableReturn("2000.01", 0.1), VariableReturn("2000.02", 0.2))
+      )
+
+      "return the nth rate for VariableReturn" in {
+        Returns.monthlyRate(variableReturns, 0) should ===(0.1)
+        Returns.monthlyRate(variableReturns, 1) should ===(0.2)
+      }
+      "roll over from the first rate if n > length" in {
+        Returns.monthlyRate(variableReturns, 2) should ===(0.1)
+        Returns.monthlyRate(variableReturns, 3) should ===(0.2)
+        Returns.monthlyRate(variableReturns, 4) should ===(0.1)
+      }
+    }
+  }
+```
+
+``` scala
+object Returns {
+  def monthlyRate(returns: Returns, month: Int): Double =
+    returns match {
+      case FixedReturns(r)     => r / 12
+      case VariableReturns(rs) => rs(month % rs.length).monthlyRate
+    }
+}
+```
+
+这里的例子比较简单，但也可以实现复杂的模式。强大到通常可以替代 `if/else` 表达式：
+
+``` scala
+scala> Vector(1, 2, 3, 4) match {
+     |   case head +: second +: tail => tail
+     | }
+val res5: scala.collection.immutable.Vector[Int] = Vector(3, 4)
+
+scala> Vector(1, 2, 3, 4) match {
+     |   case head +: second +: tail => second
+     | }
+val res6: Int = 2
+
+scala> ("0", 1, (2.0, 3.0)) match {
+     |   case ("0", int, (d0, d1)) => d0 + d1
+     | }
+val res7: Double = 5.0
+
+scala> "hello" match {
+     |   case "hello" | "world" => 1
+     |   case "hello world world" => 2
+     | }
+val res8: Int = 1
+```
+我是函数式编程的的倡导者，更喜欢在对象中使用纯函数：
+
+- 因为整个调度逻辑在一个地方，所以它们更容易推理。
+- 很容易一直到其他对象，有助于重构。
+- 它们的范围更为有限。在类方法中，始终在作用域中拥有类的所有属性。在函数中，只有函数的参数。这有助于单元测试和可读性，因为您知道函数除了参数之外不能使用其他任何东西。另外，当类具有可变属性时，它可以避免副作用。
+- 有时在面向对象的设计中，当一个方法操作两个对象A 和 B 时，不清楚该方法应该在类 A 还是类 B 中。
 
 # 打包应用 
 # 总结
