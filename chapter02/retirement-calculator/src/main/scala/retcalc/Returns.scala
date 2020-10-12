@@ -12,3 +12,10 @@ case class VariableReturns(returns: Vector[VariableReturn]) extends Returns {
 }
 
 case class VariableReturn(monthId: String, monthlyRate: Double)
+
+object Returns {
+  def monthlyRate(returns: Returns, month: Int): Double =
+    returns match {
+      case FixedReturns(r) => r / 12
+    }
+}

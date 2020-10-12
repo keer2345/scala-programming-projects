@@ -637,6 +637,39 @@ case class VariableReturns(returns: Vector[VariableReturn]) extends Returns {
 ## 模式匹配
 现在，我们可以表达变量 `returns`，我们需要修改 `futureCapital` 来传入 `Returns` 参数替代每月的 `Double` 类型的利率：
 
+``` scala
+      "calculate the amount of savings I will have in n months" in {
+        // Excel = FV(0.04/12, 25*12, 1000, 10000, 0)
+        val actual =
+          RetCalc.futureCapital(
+            returns = FixedReturns(0.04),
+            nbOfMonths = 25 * 12,
+            netIncome = 3000,
+            currentExpenses = 2000,
+            initialCapital = 10000
+          )
+        val expected = 541267.1990
+        actual should ===(expected)
+      }
+```
+然后，修改 `futureCapital` 函数：
+
+``` scala
+  def futureCapital(
+      returns: Returns, 
+      nbOfMonths: Int,
+      netIncome: Int,
+      currentExpenses: Int,
+      initialCapital: Double
+  ): Double = {
+    val monthlySavings = netIncome - currentExpenses
+    (0 until nbOfMonths).foldLeft(initialCapital)((accumulated, month) =>
+      accumulated * (1 + Returns
+        .monthlyRate(fixedReturns, month)) + monthlySavings
+    )
+  }
+```
+
 
 
 # 打包应用 

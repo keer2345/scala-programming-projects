@@ -15,9 +15,10 @@ class RetCalcSpec
   "RetCalc" when {
     "futureCapital" should {
       "calculate the amount of savings I will have in n months" in {
+        // Excel = FV(0.04/12, 25*12, 1000, 10000, 0)
         val actual =
           RetCalc.futureCapital(
-            interestRate = 0.04 / 12,
+            returns = FixedReturns(0.04),
             nbOfMonths = 25 * 12,
             netIncome = 3000,
             currentExpenses = 2000,
@@ -30,7 +31,7 @@ class RetCalcSpec
       "calculate how much savings will be left after having taken a pension for n months" in {
         val actual =
           RetCalc.futureCapital(
-            interestRate = 0.04 / 12,
+            returns = FixedReturns(0.04),
             nbOfMonths = 40 * 12,
             netIncome = 0,
             currentExpenses = 2000,
@@ -78,7 +79,7 @@ class RetCalcSpec
           currentExpenses = 2999,
           initialCapital = 0
         )
-        val expected = 8280
+        val expected = 2338 //8280
         actual should ===(expected)
       }
 
