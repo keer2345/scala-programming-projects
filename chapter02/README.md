@@ -749,5 +749,185 @@ val res8: Int = 1
 - 它们的范围更为有限。在类方法中，始终在作用域中拥有类的所有属性。在函数中，只有函数的参数。这有助于单元测试和可读性，因为您知道函数除了参数之外不能使用其他任何东西。另外，当类具有可变属性时，它可以避免副作用。
 - 有时在面向对象的设计中，当一个方法操作两个对象A 和 B 时，不清楚该方法应该在类 A 还是类 B 中。
 
+## 重构simulatePlan
+
+我们修改了 `futureCapital`，同样地也需要修改调用它的函数，目前只有 `simulatePlan`。之前的利息我们是通过固定利率直接实现的，而现在使用可变的利率。
+
+例如，我们从 1950 年开始存钱并在 1975 年退休，在储蓄阶段，我们需要计算从 1950 到 1975 年的回报；退休后则需从 1975 年算起。我们创建新的测试单元以确保两个阶段使用不同的 `returns`。
+
+`RetCalcSpec.scala`:
+
+``` scala
+    "simulatePlan" should {
+      "calculate the capital at retirement and capital after death" in {
+        val (capitalAtRetirement, capitalAfterDeath) = RetCalc.simulatePlan(
+          returns = FixedReturns(0.04),
+          params = params,
+          nbOfMonthsSavings = 25 * 12
+        )
+        capitalAtRetirement should ===(541267.1990)
+        capitalAfterDeath should ===(309867.5316)
+      }
+
+      "use different returns for capitalisation and  drawdown" in {
+        val nbOfMonthsSavings = 25 * 12
+        val returns = VariableReturns(
+          Vector.tabulate(nbOfMonthsSavings + params.nbOfMonthsInRetirement)(
+            i =>
+              if (i < nbOfMonthsSavings)
+                VariableReturn(i.toString, 0.04 / 12)
+              else
+                VariableReturn(i.toString, 0.03 / 12)
+          )
+        )
+        val (capitalAtRetirement, capitalAfterDeath) =
+          RetCalc.simulatePlan(returns, params, nbOfMonthsSavings)
+        capitalAtRetirement should ===(541267.1990)
+        capitalAfterDeath should ===(-57737.7227)
+      }
+    }
+
+    "nbOfMonthsSaving" should {
+      "calculate how long I need to save before I can retire" in {
+        val actual = RetCalc.nbOfMonthsSaving(
+          returns = FixedReturns(0.04),
+          params = params
+        )
+
+        val excepted = 23 * 12 + 1
+        actual should ===(excepted)
+      }
+
+      "not crash if the resulting nbOfMonths is very high" in {
+        val actual = RetCalc.nbOfMonthsSaving(
+          returns = FixedReturns(0.01),
+          params = RetCalcParams(
+            nbOfMonthsInRetirement = 40 * 12,
+            netIncome = 3000,
+            currentExpenses = 2999,
+            initialCapital = 0
+          )
+        )
+        val expected = 8280
+        actual should ===(expected)
+      }
+
+      "not loop forever if I enter bad parameters" in {
+        val actual = RetCalc.nbOfMonthsSaving(
+          FixedReturns(0.04),
+          params = params.copy(netIncome = 1000)
+        )
+        actual should ===(Int.MaxValue)
+      }
+    }
+```
+
+`RetCalc.scala`:
+
+``` scala
+  def simulatePlan(
+      returns: Returns,
+      params: RetCalcParams,
+      nbOfMonthsSavings: Int,
+      monthOffset: Int = 0
+  ): (Double, Double) = {
+    import params._
+    val capitalAtRetirement = futureCapital(
+      returns = OffsetReturns(returns, monthOffset),
+      nbOfMonths = nbOfMonthsSavings,
+      netIncome = netIncome,
+      currentExpenses = currentExpenses,
+      initialCapital = initialCapital
+    )
+
+    val capitalAfterDeath = futureCapital(
+      returns = OffsetReturns(returns, monthOffset + nbOfMonthsSavings),
+      nbOfMonths = nbOfMonthsInRetirement,
+      netIncome = 0,
+      currentExpenses = currentExpenses,
+      initialCapital = capitalAtRetirement
+    )
+
+    (capitalAtRetirement, capitalAfterDeath)
+  }
+
+  def nbOfMonthsSaving(
+      returns: Returns,
+      params: RetCalcParams
+  ): Int = {
+    @tailrec
+    def loop(months: Int): Int = {
+      val (_, capitalAfterDeath) = simulatePlan(
+        returns = returns,
+        params = params,
+        nbOfMonthsSavings = months
+      )
+      if (capitalAfterDeath > 0.0) months else loop(months + 1)
+    }
+    if (params.netIncome > params.currentExpenses) loop(0) else Int.MaxValue
+  }
+```
+
+这里我们引用新的子类 `OffsetReturns` 来让 `futureCapital` 调用，它将转移开始月份。我们先编写测试单元：
+
+`ReturnsSpec.scala`:
+
+``` scala
+      "return the n+offset th  rate for OffsetReturn" in {
+        val returns = OffsetReturns(variableReturns, 1)
+        Returns.monthlyRate(returns, 0) should ===(0.2)
+        Returns.monthlyRate(returns, 1) should ===(0.1)
+      }
+```
+
+
+接下来，我们完成 `Returns.scala`:
+
+``` scala
+case class OffsetReturns(orig: Returns, offset: Int) extends Returns
+
+object Returns {
+  def monthlyRate(returns: Returns, month: Int): Double =
+    returns match {
+      case FixedReturns(r)           => r / 12
+      case VariableReturns(rs)       => rs(month % rs.length).monthlyRate
+      case OffsetReturns(rs, offset) => monthlyRate(rs, month + offset)
+    }
+}
+```
+
+运行 `sbt test`，测试成功。
+
+```
+[info] ReturnsSpec:
+[info] VariableReturns
+[info]   when formUntil
+[info]   - should keep only a window of the returns
+[info] Returns
+[info]   when monthlyRate
+[info]   - should return a fixed rate for a FixedReturn
+[info]   - should return the nth rate for VariableReturn
+[info]   - should roll over from the first rate if n > length
+[info]   - should return the n+offset th  rate for OffsetReturn
+[info] RetCalcSpec:
+[info] RetCalc
+[info]   when futureCapital
+[info]   - should calculate the amount of savings I will have in n months
+[info]   - should calculate how much savings will be left after having taken a pension for n months
+[info]   when simulatePlan
+[info]   - should calculate the capital at retirement and capital after death
+[info]   - should use different returns for capitalisation and  drawdown
+[info]   when nbOfMonthsSaving
+[info]   - should calculate how long I need to save before I can retire
+[info]   - should not crash if the resulting nbOfMonths is very high
+[info]   - should not loop forever if I enter bad parameters
+[info] Run completed in 1 second, 907 milliseconds.
+[info] Total number of tests run: 12
+[info] Suites: completed 2, aborted 0
+[info] Tests: succeeded 12, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 11 s
+```
+
 # 打包应用 
 # 总结

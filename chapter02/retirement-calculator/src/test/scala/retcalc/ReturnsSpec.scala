@@ -96,6 +96,11 @@ class ReturnsSpec
         Returns.monthlyRate(variableReturns, 3) should ===(0.2)
         Returns.monthlyRate(variableReturns, 4) should ===(0.1)
       }
+      "return the n+offset th  rate for OffsetReturn" in {
+        val returns = OffsetReturns(variableReturns, 1)
+        Returns.monthlyRate(returns, 0) should ===(0.2)
+        Returns.monthlyRate(returns, 1) should ===(0.1)
+      }
     }
   }
 }
