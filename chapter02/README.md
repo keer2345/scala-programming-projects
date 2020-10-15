@@ -1106,7 +1106,10 @@ object InflationData {
 给出月份 $n$ ，实际回报 $return_n - inflationRate_n$，公式如下：
 
  $$xyz$$
+ 
+![](https://latex.codecogs.com/gif.latex?\dpi{400}\alpha&space;+&space;\frac{2\beta}{\gamma})
 
+![](http://....)
 $$realReturn_n = \frac{price_n + dividends_n}{price_{n-1}} - \frac{inflation_n}{inflation_{n-1}}$$
 
 
