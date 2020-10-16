@@ -26,4 +26,4 @@ Scala 是类型安全（type-safe）的 JVM 语言，它结合了面向对象和
 - [Chapter 02](https://github.com/keer2345/scala-programming-projects/tree/main/chapter02)，Developing a Retirement Calculator，退休计算器有助于人们计算工作多久才能有足够的退休金。
 
 
-地方 ![](https://latex.codecogs.com/gif.latex?\dpi{200}return_n%20-%20inflation_n) 和方队放
+地方 ![](https://latex.codecogs.com/gif.latex?\dpi{100}return_n%20-%20inflation_n) 和方队放
