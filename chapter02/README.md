@@ -1103,14 +1103,10 @@ object InflationData {
 }
 ```
 ## 计算真实回报
-给出月份 $n$ ，实际回报 $return_n - inflationRate_n$，公式如下：
+给出月份 `n` ，实际回报 ![](https://latex.codecogs.com/gif.latex?\dpi{100}return_n%20-%20inflation_n)，公式如下：
 
- $$xyz$$
+![](https://latex.codecogs.com/gif.latex?\dpi{100}realReturn_n%20=%20\frac{price_n%20+%20dividends_n}{price_{n-1}}%20-%20\frac{inflation_n}{inflation_{n-1}})
  
-![](https://latex.codecogs.com/gif.latex?\dpi{400}\alpha&space;+&space;\frac{2\beta}{\gamma})
-
-![](http://....)
-$$realReturn_n = \frac{price_n + dividends_n}{price_{n-1}} - \frac{inflation_n}{inflation_{n-1}}$$
 
 
 # 打包应用 
