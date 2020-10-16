@@ -1,5 +1,42 @@
 # Developing a Retirement Calculator
 
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
+
+- [Developing a Retirement Calculator](#developing-a-retirement-calculator)
+- [项目概览](#项目概览)
+- [计算未来资金](#计算未来资金)
+    - [为积累期编写测试单元](#为积累期编写测试单元)
+    - [实现futureCapital](#实现futurecapital)
+    - [重构生产代码](#重构生产代码)
+    - [进一步编写测试单元](#进一步编写测试单元)
+    - [模拟退休计划](#模拟退休计划)
+        - [编写失败的测试单元](#编写失败的测试单元)
+        - [利用元组](#利用元组)
+        - [实现simulatePlan](#实现simulateplan)
+- [计算何时退休](#计算何时退休)
+    - [测试失败的nbOfMonthsSaving](#测试失败的nbofmonthssaving)
+    - [编写函数体](#编写函数体)
+    - [理解尾部递归](#理解尾部递归)
+    - [确保终止](#确保终止)
+- [使用市场利率](#使用市场利率)
+    - [定义代数数据类型](#定义代数数据类型)
+    - [筛选特定期间的回报](#筛选特定期间的回报)
+    - [模式匹配](#模式匹配)
+    - [重构simulatePlan](#重构simulateplan)
+    - [加载市场数据](#加载市场数据)
+        - [构建测试单元](#构建测试单元)
+        - [从文件加载数据](#从文件加载数据)
+        - [加载通货膨胀数据](#加载通货膨胀数据)
+    - [计算真实回报](#计算真实回报)
+- [打包应用](#打包应用)
+    - [创建应用项目](#创建应用项目)
+    - [打包应用](#打包应用-1)
+- [总结](#总结)
+
+<!-- markdown-toc end -->
+
+
 这一章，我们将接着上一章来实践 Scala 语言特性。我们通过退休计算器来介绍 Scala 语言其他方面以及 SDK 开发逻辑模型。该计算器有助于我们计算想有个舒适的退休生活需要工作多久和存多少钱。
 
 我们通过测试驱动（TDD）来开发，最好先尝试自己编写函数。此外，最好是自己书写代码，而不是复制粘贴。这样将收获更多并更喜欢 IntelliJ 编辑器。
@@ -985,7 +1022,7 @@ package retcalc
 
 import scala.io.Source
 
-case class EquityData(methodId: String, value: Double, annualDividend: Double) {
+case class EquityData(monthId: String, value: Double, annualDividend: Double) {
   val monthlyDividend: Double = annualDividend / 12
 }
 
@@ -998,7 +1035,7 @@ object EquityData {
       .map { line =>
         val fields = line.split(("\t"))
         EquityData(
-          methodId = fields(0),
+          monthId = fields(0),
           value = fields(1).toDouble,
           annualDividend = fields(2).toDouble
         )
@@ -1087,7 +1124,7 @@ package retcalc
 
 import scala.io.Source
 
-case class InflationData(methodId: String, value: Double)
+case class InflationData(monthId: String, value: Double)
 
 object InflationData {
   def fromResource(resource: String): Vector[InflationData] =
@@ -1097,7 +1134,7 @@ object InflationData {
       .drop(1)
       .map { line =>
         val fields = line.split("\t")
-        InflationData(methodId = fields(0), value = fields(1).toDouble)
+        InflationData(monthId = fields(0), value = fields(1).toDouble)
       }
       .toVector
 }
@@ -1213,4 +1250,88 @@ case (prevEquity, prevInflation) +: (equity, inflation) +: Vector() =>
 ```
 
 # 打包应用 
+## 创建应用项目
+我们来创建可执行的 `RetCalc.simulatePlan`，通过一系列空格分隔的参数调用，并将结果打印在终端。
+
+这种测试是集成集中组件并使用市场数据集，也就是说，我们不再使用任何测试单元，而是一种集成测试。基于此，我们使用后缀 `IT` 来代替 `Spec`。
+
+首先，从网上复制 [sp500.tsv](https://github.com/PacktPublishing/Scala-Programming-Projects/blob/master/Chapter02/retirement-calculator/src/main/resources/sp500.tsv) 和 [cpi.tsv](https://github.com/PacktPublishing/Scala-Programming-Projects/blob/master/Chapter02/retirement-calculator/src/main/resources/cpi.tsv) 数据到 `src/main/resources`，然后在 `src/test/scala` 创建测试单元 `SimulatePlanAppIt`：
+
+``` scala
+package retcalc
+
+import org.scalactic.TypeCheckedTripleEquals
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
+class SimulatePlanAppIT
+    extends AnyWordSpec
+    with Matchers
+    with TypeCheckedTripleEquals {
+  "SimulatePlanApp" when {
+    "strMain" should {
+      "simulate a retirement plan using market returns" in {
+        val actualResult = SimulatePlanApp.strMain(
+          Array("1997.09,2017.09", "25", "40", "3000", "2000", "10000"))
+        val expectedResult =
+          s"""
+             |Capital after 25 years of savings:    499923
+             |Capital after 40 years in retirement: 586435
+             |""".stripMargin
+        actualResult should ===(expectedResult)
+      }
+    }
+  }
+}
+```
+
+
+为了保持简单，我们假设参数有特定的顺序。我们将在下一章开发更多友好而有用的接口。本章将完成：
+
+1. 我们使用 returns 变量，通过逗号（comma）分离。
+1. 省钱的年数。
+1. 退休后的年数。
+1. 收入。
+1. 开销。
+1. 初始资金。
+
+
+`SimulatePlanApp.scala`:
+``` scala
+package retcalc
+
+object SimulatePlanApp extends App {
+  println(strMain(args))
+  def strMain(args: Array[String]): String = {
+    val (from +: until +: Nil) = args(0).split(",").toList
+    val nbOfYearsSaving = args(1).toInt
+    val nbOfYearsInRetirement = args(2).toInt
+
+    val allReturns =
+      Returns.fromEquityAndInflationData(
+        equities = EquityData.fromResource("sp500.tsv"),
+        inflations = InflationData.fromResource("cpi.tsv"))
+    val (capitalAtRetirement, capitalAfterDeath) = RetCalc.simulatePlan(
+      returns = allReturns.fromUtils(from, until),
+      params = RetCalcParams(
+        nbOfMonthsInRetirement = nbOfYearsInRetirement * 12,
+        netIncome = args(3).toInt,
+        currentExpenses = args(4).toInt,
+        initialCapital = args(5).toInt),
+      nbOfMonthsSavings = nbOfYearsSaving * 12
+    )
+    s"""
+       |Capital after $nbOfYearsSaving years of savings:    ${capitalAtRetirement.round}
+       |Capital after $nbOfYearsInRetirement years in retirement: ${capitalAfterDeath.round}
+       |""".stripMargin
+
+  }
+}
+```
+## 打包应用
+到目前为止一切都很顺利，当时我们想将应用发送给 Bob 的时候，他也能同样计算退休计划吗？对他来说去下载 IntelliJ 或 SBT 是很不方便的。 我们将应用打包成 `.jar` 文件以便于通过命令行运行。
+
+SBT 提供包任务来创建 `.jar` 文件，但是这个文件不包含其他依赖。为了连同依赖一起打包，我们使用 [sbt-assembly](https://github.com/sbt/sbt-assembly) 插件。
+
+
 # 总结
