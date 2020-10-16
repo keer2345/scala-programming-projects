@@ -109,7 +109,7 @@ class ReturnsSpec
           VariableReturns(
             Vector(
               VariableReturn(
-                "2017.02",
+                "2117.02",
                 (101.0 + 12.0 / 12) / 100.0 - 102.0 / 100.0),
               VariableReturn(
                 "2117.03",
