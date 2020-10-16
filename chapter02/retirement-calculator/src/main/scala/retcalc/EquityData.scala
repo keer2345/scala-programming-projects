@@ -2,7 +2,7 @@ package retcalc
 
 import scala.io.Source
 
-case class EquityData(methodId: String, value: Double, annualDividend: Double) {
+case class EquityData(monthId: String, value: Double, annualDividend: Double) {
   val monthlyDividend: Double = annualDividend / 12
 }
 
@@ -15,10 +15,9 @@ object EquityData {
       .map { line =>
         val fields = line.split(("\t"))
         EquityData(
-          methodId = fields(0),
+          monthId = fields(0),
           value = fields(1).toDouble,
-          annualDividend = fields(2).toDouble
-        )
+          annualDividend = fields(2).toDouble)
       }
       .toVector
 }

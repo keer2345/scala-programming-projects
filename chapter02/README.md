@@ -1103,11 +1103,114 @@ object InflationData {
 }
 ```
 ## 计算真实回报
-给出月份 `n` ，实际回报 ![](https://latex.codecogs.com/gif.latex?\dpi{100}return_n%20-%20inflation_n)，公式如下：
+给出月份 *n* ，实际回报 ![](https://latex.codecogs.com/gif.latex?\dpi{100}return_n%20-%20inflation_n)，公式如下：
 
+<div align="center">
 ![](https://latex.codecogs.com/gif.latex?\dpi{100}realReturn_n%20=%20\frac{price_n%20+%20dividends_n}{price_{n-1}}%20-%20\frac{inflation_n}{inflation_{n-1}})
- 
+</div>
 
+我们在 `Returns` 里通过 `Vector[EquityData]` 和 `Vector[InflationData]` 创建新的 `VariableReturns`。首先添加测试单元到 `ReturnsSpec`：
+
+``` scala
+  "Returns" when {
+    "monthlyRate" should {
+      // ...
+    }
+
+    "fromEquityAndInflationData" should {
+      "compute real total returns from equity and inflation data" in {
+        val equities = Vector(
+          EquityData("2117.01", 100.0, 10.0),
+          EquityData("2117.02", 101.0, 12.0),
+          EquityData("2117.03", 102.0, 12.0))
+        val inflations = Vector(
+          InflationData("2117.01", 100.0),
+          InflationData("2117.02", 102.0),
+          InflationData("2117.03", 102.0))
+
+        val returns = Returns.fromEquityAndInflationData(equities, inflations)
+        returns should ===(
+          VariableReturns(
+            Vector(
+              VariableReturn(
+                "2017.02",
+                (101.0 + 12.0 / 12) / 100.0 - 102.0 / 100.0),
+              VariableReturn(
+                "2117.03",
+                (102.0 + 12.0 / 12) / 101.0 - 102.0 / 102.0))))
+      }
+    }
+  }
+```
+
+我们创建了 `EquityData` 和 `InflationData` 两个 `Vector` 实例，并通过前面的公式做计算。
+
+接着在 `Returns.scala` 中实现 `fromEquityAndInflationData` 函数：
+
+``` scala
+object Returns {
+  def fromEquityAndInflationData(
+      equities: Vector[EquityData],
+      inflations: Vector[InflationData]
+  ): VariableReturns = {
+    VariableReturns(
+      returns = equities
+        .zip(inflations)
+        .sliding(2)
+        .collect {
+          case (prevEquity, prevInflation) +: (equity, inflation) +: Vector() =>
+            val inflationRate = inflation.value / prevInflation.value
+            val totalReturn =
+              (equity.value + equity.monthlyDividend) / prevEquity.value
+            val realTotalReturn = totalReturn - inflationRate
+
+            VariableReturn(equity.monthId, realTotalReturn)
+        }
+        .toVector)
+  }
+
+  def monthlyRate(returns: Returns, month: Int): Double =
+    // ...
+    
+}
+```
+
+首先，我们通过 `zip` 将两个 `Vector` 创建成元组 `(EquityData, InflationData)`。比如：
+
+``` scala
+scala> Vector(1,2).zip(Vector("a", "b", "c"))
+res0: scala.collection.immutable.Vector[(Int, String)] = Vector((1,a), (2,b))
+```
+这是个好的开端，接下来迭代集合可以分别得到 *price*, *diviends* 和 *inflation* 的 *n* 次方，但为了计算我们的公式，我们也需要前一个（*n-1*）数据，为此我们使用 `sliding(2)`。尝试一下：
+
+``` scala
+scala>  val it = Vector(1, 2, 3, 4).sliding(2)
+val it: Iterator[scala.collection.immutable.Vector[Int]] = <iterator>
+
+scala> it.toVector
+val res30: scala.collection.immutable.Vector[scala.collection.immutable.Vector[Int]] = Vector(Vector(1, 2), Vector(2, 3), Vector(3, 4))
+
+scala> Vector(1).sliding(2).toVector
+val res31: scala.collection.immutable.Vector[scala.collection.immutable.Vector[Int]] = Vector(Vector(1))
+```
+`sliding(p)` 可以创建大小为 `p` 的 `Iterator` 集合。
+
+``` scala
+scala> val v = Vector(1, 2, 3)
+val v: scala.collection.immutable.Vector[Int] = Vector(1, 2, 3)
+
+scala> v.filter(i => i != 2).map(_ + 1)
+val res33: scala.collection.immutable.Vector[Int] = Vector(2, 4)
+
+scala> v.collect { case i if i != 2 => i + 1 }
+val res34: scala.collection.immutable.Vector[Int] = Vector(2, 4)
+```
+
+最后，我们就行匹配：
+
+``` scala
+case (prevEquity, prevInflation) +: (equity, inflation) +: Vector() =>
+```
 
 # 打包应用 
 # 总结

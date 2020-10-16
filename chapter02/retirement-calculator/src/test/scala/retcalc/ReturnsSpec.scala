@@ -21,38 +21,31 @@ class ReturnsSpec
         })
 
         variableReturns should ===(
-          VariableReturns(
-            Vector(
-              VariableReturn("2017.01", 1.0),
-              VariableReturn("2017.02", 2.0),
-              VariableReturn("2017.03", 3.0),
-              VariableReturn("2017.04", 4.0),
-              VariableReturn("2017.05", 5.0),
-              VariableReturn("2017.06", 6.0),
-              VariableReturn("2017.07", 7.0),
-              VariableReturn("2017.08", 8.0),
-              VariableReturn("2017.09", 9.0),
-              VariableReturn("2017.10", 10.0),
-              VariableReturn("2017.11", 11.0),
-              VariableReturn("2017.12", 12.0)
-            )
-          )
-        )
+          VariableReturns(Vector(
+            VariableReturn("2017.01", 1.0),
+            VariableReturn("2017.02", 2.0),
+            VariableReturn("2017.03", 3.0),
+            VariableReturn("2017.04", 4.0),
+            VariableReturn("2017.05", 5.0),
+            VariableReturn("2017.06", 6.0),
+            VariableReturn("2017.07", 7.0),
+            VariableReturn("2017.08", 8.0),
+            VariableReturn("2017.09", 9.0),
+            VariableReturn("2017.10", 10.0),
+            VariableReturn("2017.11", 11.0),
+            VariableReturn("2017.12", 12.0)
+          )))
 
         variableReturns.fromUtils("2017.07", "2017.09").returns should ===(
           Vector(
             VariableReturn("2017.07", 7.0),
-            VariableReturn("2017.08", 8.0)
-          )
-        )
+            VariableReturn("2017.08", 8.0)))
 
         variableReturns.fromUtils("2017.10", "2018.01").returns should ===(
           Vector(
             VariableReturn("2017.10", 10.0),
             VariableReturn("2017.11", 11.0),
-            VariableReturn("2017.12", 12.0)
-          )
-        )
+            VariableReturn("2017.12", 12.0)))
 
         val variableReturns2 = VariableReturns(
           Vector(
@@ -63,16 +56,13 @@ class ReturnsSpec
             VariableReturn("2018.01", 1.0),
             VariableReturn("2018.02", 2.0),
             VariableReturn("2018.03", 3.0)
-          )
-        )
+          ))
         variableReturns2.fromUtils("2017.10", "2018.02").returns should ===(
           Vector(
             VariableReturn("2017.10", 10.0),
             VariableReturn("2017.11", 11.0),
             VariableReturn("2017.12", 12.0),
-            VariableReturn("2018.01", 1.0)
-          )
-        )
+            VariableReturn("2018.01", 1.0)))
       }
     }
   }
@@ -100,6 +90,30 @@ class ReturnsSpec
         val returns = OffsetReturns(variableReturns, 1)
         Returns.monthlyRate(returns, 0) should ===(0.2)
         Returns.monthlyRate(returns, 1) should ===(0.1)
+      }
+    }
+
+    "fromEquityAndInflationData" should {
+      "compute real total returns from equity and inflation data" in {
+        val equities = Vector(
+          EquityData("2117.01", 100.0, 10.0),
+          EquityData("2117.02", 101.0, 12.0),
+          EquityData("2117.03", 102.0, 12.0))
+        val inflations = Vector(
+          InflationData("2117.01", 100.0),
+          InflationData("2117.02", 102.0),
+          InflationData("2117.03", 102.0))
+
+        val returns = Returns.fromEquityAndInflationData(equities, inflations)
+        returns should ===(
+          VariableReturns(
+            Vector(
+              VariableReturn(
+                "2017.02",
+                (101.0 + 12.0 / 12) / 100.0 - 102.0 / 100.0),
+              VariableReturn(
+                "2117.03",
+                (102.0 + 12.0 / 12) / 101.0 - 102.0 / 102.0))))
       }
     }
   }
