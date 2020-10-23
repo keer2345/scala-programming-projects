@@ -499,6 +499,76 @@ val res8: String = Michael is not presen in db
 > 一般不在 `Option` 中使用 `.get` 方法 —— 而是使用 `.getOrElse`。`.get` 方法会在 `Option` 为 `None` 时抛出异常，这是不安全的。
 
 ## 通过yield合成转换
+
+下面的代码使用了相同的 `db: Map[String, Int]`，包含不同人的年龄，这个简单的函数返回两个人的平均年龄：
+
+``` scala
+scala> def averageAgeA(name1: String, name2: String, db: Map[String, Int]): Option[Double] = {
+     |   val optOptAvg: Option[Option[Double]] =
+     |     db.get(name1).map(age1 =>
+     |       db.get(name2).map(age2 =>
+     |         (age1 + age2).toDouble / 2))
+     |   optOptAvg.flatten
+     | }
+def averageAgeA(name1: String, name2: String, db: Map[String,Int]): Option[Double]
+
+scala> val db = Map("John" -> 25, "Rob" -> 40)
+val db: scala.collection.immutable.Map[String,Int] = Map(John -> 25, Rob -> 40)
+
+scala> averageAgeA("John", "Rob", db)
+val res16: Option[Double] = Some(32.5)
+
+scala> averageAgeA("John", "Michael", db)
+val res18: Option[Double] = None
+```
+函数返回类型是 `Option[Douible]`，如果 `name1` 或 `name2` 在 `db` Map 中未找到，则 `averageAgeA` 返回 `None`，如果名字都找到了，返回 `Some(value)`。使用 `map` 来转换 `Option[Double]` 包含的值。幸运的是，我们可以使用 `flatten` 来移除一层嵌套。 
+
+我实现了 `averageAgeA`，但可以用 `flatMap` 来优化它：
+
+``` scala
+scala> def averageAgeB(name1: String, name2: String, db: Map[String, Int]): Option[Double] =
+     |   db.get(name1).flatMap(age1 =>
+     |     db.get(name2).map(age2 =>
+     |       (age1 + age2).toDouble /2))
+def averageAgeB(name1: String, name2: String, db: Map[String,Int]): Option[Double]
+
+scala> averageAgeB("John", "Rob", db)
+val res19: Option[Double] = Some(32.5)
+
+scala> averageAgeB("John", "Michael", db)
+val res20: Option[Double] = None
+```
+
+`flatMap` 等效于 `flatten` 和 `map`。在我们的函数中，用 `flatMap(...)` 替换了 `map(...).flatten`。
+
+到目前为止，一切都很好，但是如果是三个人或四个人，我们如何获取到年龄的平均值？我们将内嵌多个 `flatMap`，这将大大地降低可读性。所幸，Scala 提供了语法糖可以让我们进一步简化函数，成为 `for`：
+
+``` scala
+scala> def averageAgeC(name1: String, name2: String, db: Map[String, Int]): Option[Double] =
+     |   for {
+     |     age1 <- db.get(name1)
+     |     age2 <- db.get(name2)
+     |   } yield (age1 + age2).toDouble /2
+def averageAgeC(name1: String, name2: String, db: Map[String,Int]): Option[Double]
+```
+当编译了这段 `for`，类似 `for {...} yield {...}`，Scala 编译器转换成 `flatMap/map` 操作。它是这样工作的：
+- 内部的 `for` 代码块，科颜氏一个或者多个类似 `variable <- context` 的表达式判断，称之为**生成器**（generator）。箭头的左边是变量名，它绑定右边了内容的上下文。
+- 除了最后一个，每个生成器转成成 `flatMap` 表达式。
+- 最后一个生成器转成成 `map` 表达式。
+- 所有上下文表达式（箭头右边）必须有同样地上下文类型。
+
+在前面的例子中，我们使用 `Option` 当做上下文的类型，但对于 `yield`，也可以与具有 `flatMap` 和 `map` 操作的任何类一起使用。例如，我们可以用带有 `Vector` 的 `for ... yield` 来运行内嵌循环：
+
+``` scala
+scala> for {
+     |   i <- Vector("one", "two")
+     |   j <- Vector(1,2,3)
+     | } yield (i, j)
+val res21: scala.collection.immutable.Vector[(String, Int)] = Vector((one,1), (one,2), (one,3), (two,1), (two,2), (two,3))
+```
+
+> **语法糖**是让编程语言变得容易读写的语法，让编程人员更愉悦。
+
 ## 使用Option重构退休金计算器
 
 # 使用Either
