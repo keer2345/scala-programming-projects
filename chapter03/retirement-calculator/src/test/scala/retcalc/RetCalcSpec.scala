@@ -22,8 +22,7 @@ class RetCalcSpec
             nbOfMonths = 25 * 12,
             netIncome = 3000,
             currentExpenses = 2000,
-            initialCapital = 10000
-          )
+            initialCapital = 10000)
         val expected = 541267.1990
         actual should ===(expected)
       }
@@ -68,8 +67,7 @@ class RetCalcSpec
               if (i < nbOfMonthsSavings)
                 VariableReturn(i.toString, 0.04 / 12)
               else
-                VariableReturn(i.toString, 0.03 / 12)
-          )
+                VariableReturn(i.toString, 0.03 / 12))
         )
         val (capitalAtRetirement, capitalAfterDeath) =
           RetCalc.simulatePlan(returns, params, nbOfMonthsSavings)
@@ -86,7 +84,7 @@ class RetCalcSpec
         )
 
         val excepted = 23 * 12 + 1
-        actual should ===(excepted)
+        actual should ===(Some(excepted))
       }
 
       "not crash if the resulting nbOfMonths is very high" in {
@@ -100,7 +98,7 @@ class RetCalcSpec
           )
         )
         val expected = 8280
-        actual should ===(expected)
+        actual should ===(Some(expected))
       }
 
       "not loop forever if I enter bad parameters" in {
@@ -108,7 +106,7 @@ class RetCalcSpec
           FixedReturns(0.04),
           params = params.copy(netIncome = 1000)
         )
-        actual should ===(Int.MaxValue)
+        actual should ===(None)
       }
     }
   }

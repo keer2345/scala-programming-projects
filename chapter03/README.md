@@ -554,7 +554,7 @@ def averageAgeC(name1: String, name2: String, db: Map[String,Int]): Option[Doubl
 当编译了这段 `for`，类似 `for {...} yield {...}`，Scala 编译器转换成 `flatMap/map` 操作。它是这样工作的：
 - 内部的 `for` 代码块，科颜氏一个或者多个类似 `variable <- context` 的表达式判断，称之为**生成器**（generator）。箭头的左边是变量名，它绑定右边了内容的上下文。
 - 除了最后一个，每个生成器转成成 `flatMap` 表达式。
-- 最后一个生成器转成成 `map` 表达式。
+- 最后一个生成器转换成 `map` 表达式。
 - 所有上下文表达式（箭头右边）必须有同样地上下文类型。
 
 在前面的例子中，我们使用 `Option` 当做上下文的类型，但对于 `yield`，也可以与具有 `flatMap` 和 `map` 操作的任何类一起使用。例如，我们可以用带有 `Vector` 的 `for ... yield` 来运行内嵌循环：
@@ -570,6 +570,71 @@ val res21: scala.collection.immutable.Vector[(String, Int)] = Vector((one,1), (o
 > **语法糖**是让编程语言变得容易读写的语法，让编程人员更愉悦。
 
 ## 使用Option重构退休金计算器
+
+现在我们知道了 `Option` 能做什么，我们将要重构第二章退休金计算器的其中一个函数，优化边界场景。
+
+在文件 `RetCala.scala` 中，我们改变 `nbMonthsSaving` 返回值的类型：
+
+``` scala
+def nbOfMonthsSaving(returns: Returns, params: RetCalcParams): Option[Int] = {
+  @tailrec
+  def loop(months: Int): Int = {
+    val (_, capitalAfterDeath) = simulatePlan(
+      returns = returns,
+      params = params,
+      nbOfMonthsSavings = months)
+    if (capitalAfterDeath > 0.0) months else loop(months + 1)
+  }
+  if (params.netIncome > params.currentExpenses) Some(loop(0)) else None
+}
+```
+测试会提示如下错误：
+
+``` scala
+types Option[Int] and Int do not adhere to the type constraint selected for the === and !== operators; the missing implicit parameter is of type org.scalactic.CanEqual[Option[Int],Int]
+[error]         actual should ===(excepted)
+```
+这个错误意味着类型不匹配。`actual` 是 `Option[Int]` 类型，而 `expected` 是 `Int` 类型。我们需要做些修改：
+
+``` scala
+    "nbOfMonthsSaving" should {
+      "calculate how long I need to save before I can retire" in {
+        val actual = RetCalc.nbOfMonthsSaving(
+          returns = FixedReturns(0.04),
+          params = params
+        )
+
+        val excepted = 23 * 12 + 1
+        actual should ===(Some(excepted))
+      }
+
+      "not crash if the resulting nbOfMonths is very high" in {
+        val actual = RetCalc.nbOfMonthsSaving(
+          returns = FixedReturns(0.01),
+          params = RetCalcParams(
+            nbOfMonthsInRetirement = 40 * 12,
+            netIncome = 3000,
+            currentExpenses = 2999,
+            initialCapital = 0
+          )
+        )
+        val expected = 8280
+        actual should ===(Some(expected))
+      }
+
+      "not loop forever if I enter bad parameters" in {
+        val actual = RetCalc.nbOfMonthsSaving(
+          FixedReturns(0.04),
+          params = params.copy(netIncome = 1000)
+        )
+        actual should ===(None)
+      }
+    }
+```
+
+我们修改了 `actual should ===(Some(expected))` 和 `actual should ===(None)`，测试通过！
+
+到目前为止我们可以建模安全的 Option 值了。然而，有时候 `None` 并不能表达确切的意思，为什么函数返回 `None`？是因为传递的参数是错误的吗？哪个参数错了？正确的应该是什么？为了更好的解释 `None` 是 为了理解为什么没有返回值。在下一节，我们将为此使用 `Either` 类型。
 
 # 使用Either
 
