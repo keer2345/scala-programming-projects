@@ -408,6 +408,98 @@ val total: Double = 0.0
 在本章的剩余部分，将展示如何使用 `Option`，`Either` 和 `Validated` 类来模拟失败的可能性。
 
 # 使用Option
+Scala 的 `Option` 是表示可选值的代数数据类型（ADT）。它也被视为可以包含零个或一个元素的 `List`，如果使用过 Java, C++ 或 C#，则可以安全的替换掉 `null` 引用。
+## 操作Option实例
+下面是个简单定义代数数据类型 `Option` 的例子：
+
+``` scala
+sealed trait Option[+A]
+case class Some[A](value: A) extends Option[A]
+case object None extends Option[Nothing]
+```
+Scala SDK 提供了更多优雅的实现，这里的定义只是为了说明 `Option` 可以是以下两种类型之一：
+- `Some(value)` 表示有值存在
+- `None` 表示没有值存在
+
+> `Option[+A]` 中 `A` 前面的 `+` 号意思是 `Option` 在类型 `A` 协变（covariant）的。我们将在第四章了解逆变（contravariance）。目前，我们仅仅知道如果 `B` 是 `A` 的子类型，那么 `Option[B]` 是 `Option[A]` 的子类型。而且，你可能注意到 `None` 实际上继承自 `Option[Nothing]` 而不是 `Option[A]`，这是因为 `case object` 不能接受类型参数。
+>
+> 在 Scala 中，`Nothing` 是最底层的类型，意味着它是任何类型的子类型。也就是说对于任意 `A`， `None` 都是 `Option[A]` 的子类型。
+
+下面是使用不同类型的 `Option` 例子：
+
+``` scala
+scala> val opt0: Option[Int] = None
+val opt0: Option[Int] = None
+
+scala> val opt1: Option[Int] = Some(1)
+val opt1: Option[Int] = Some(1)
+
+scala> val list0 = List.empty[String]
+val list0: List[String] = List()
+
+scala> list0.headOption
+val res0: Option[String] = None
+
+scala> list0.lastOption
+val res1: Option[String] = None
+
+scala> val list3 = List("Hello", "World")
+val list3: List[String] = List(Hello, World)
+
+scala> list3.headOption
+val res2: Option[String] = Some(Hello)
+
+scala> list3.lastOption
+val res3: Option[String] = Some(World)
+```
+
+- 前面两个例子展示了我们如何定义包含 `Int` 的 `Option` 类型。
+- 接下来的例子在 `List` 中使用 `headOption` 和 `lastOption` 方法来展示 SDK 中有许多返回 `Option` 的安全函数。如果 `List` 是空的，函数通常返回 `None`，注意 SDK 也提供不安全的 `head` 和 `last` 方法，如果调用的是空 `List`，不安全的方法（unsafe methods）抛出异常，要是没有捕获异常的话会破坏我们的程序。
+
+> SDK 的很多函数提供了返回 `Option` 的安全函数，以及等效的非安全函数（它们会抛出异常）。最好是总是使用安全的做法。
+
+由于 `Option` 是代数数据类型，我们可以使用模式匹配来测试 `Option` 是否为 `None` 或 `Some`：
+
+``` scala
+scala> def personDescription(name: String, db: Map[String, Int]): String = {
+     |   db.get(name) match {
+     |     case Some(age) => s"$name is $age years old"
+     |     case None => s"$name is not presen in db"
+     |   }
+     | }
+def personDescription(name: String, db: Map[String,Int]): String
+
+scala> val db = Map("John" -> 25, "Rob" -> 40)
+val db: scala.collection.immutable.Map[String,Int] = Map(John -> 25, Rob -> 40)
+
+scala> personDescription("John", db)
+val res5: String = John is 25 years old
+
+scala> personDescription("Michael", db)
+val res6: String = Michael is not presen in db
+```
+`Map` 中的 `get(key)` 方法返回包含关键字相关值的 `Option`，如果该关键字在 `Map` 中不存在就返回 `None`。当使用 `Option` 时，模式匹配很自然地依赖 `Option` 的值触发不同的行为。
+
+另一种方式是使用 `map` 和 `getOrElse`：
+
+``` scala
+scala> def personDesc(name: String, db: Map[String, Int]): String = {
+     |   val optString: Option[String] = db.get(name).map(age => s"$name is $age years old")
+     |   optString.getOrElse(s"$name is not present in db")
+val db2: scala.collection.immutable.Map[String,Int] = Map(John -> 25, Rob -> 40)
+
+scala> personDesc("John", db)
+val res7: String = John is 25 years old
+
+scala> personDescription("Michael", db)
+val res8: String = Michael is not presen in db
+```
+我们看看之前是如何使用 `map` 转换向量元素的，这里确实使用了相同的 `Option` —— 如果 `Option` 非空的话通过匿名函数调用 option 的值，我们获得 `Option[String]`；如果 `Option` 为 `None` 的话调用 `getOrElse`，它是安全提取 `Option` 内容的好办法。
+
+> 一般不在 `Option` 中使用 `.get` 方法 —— 而是使用 `.getOrElse`。`.get` 方法会在 `Option` 为 `None` 时抛出异常，这是不安全的。
+
+## 通过yield合成转换
+## 使用Option重构退休金计算器
 
 # 使用Either
 
