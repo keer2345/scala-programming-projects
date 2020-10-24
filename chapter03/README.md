@@ -733,6 +733,74 @@ def averageAge2(name1: String, name2: String, db: Map[String, Int]): Either[Stri
 同样，这代码看起来与 `Option` 一样。
 
 ## 使用Either重构退休金计算机项目
+我们了解了 `Either`，可以进一步重构退休金计算器项目。
+### 重构nbOfMonthsSavings
+上一届，我们将 `nbOfMonthsSavings` 的返回值修改成 `Option[Int]`。现在我们将其改成返回错误代码的 `Left` 类型。
+
+我们可以用简单的字符串来表示错误消息，但是最好是使用 `Either` 创建代数数据类型来表示错误消息。创建新的类 `src/main/scala/retcalc/RetCalcError.scala`：
+
+``` scala
+package retcalc
+
+sealed abstract class RetCalcError(val mesage: String)
+
+object RetCalcError {
+  case class MoreExpensesThanIncome(income: Double, expenses: Double)
+      extends RetCalcError(
+        s"Expenses: $expenses >= $income." +
+          s" You w ill never be able to save enough to retire !"
+      )
+}
+```
+我们定义带有一个参数 `message` 的特质 `RetCalaError`。这个参数提供错误信息返回给用户。内部对象 `RetCalcError` 定义了一个 case class 类型来表示错误消息。我们需要改变函数以返回 `Either[RetCalcError, A]`。
+
+这种模式比起使用 `String` 有很多好处：
+- 所有错误消息都位于一个位置。它允许您立即知道哪些可能的错误消息可以返回给用户。如果应用程序使用多种语言，还可以添加不同的翻译。
+- 由于 `RetCalcError` 是一个 ADT，所以可以使用模式匹配从特定错误中恢复并采取措施。
+- 它简化了测试。您可以测试函数是否返回特定类型的错误，而不必对错误消息本身进行断言。这样，您就可以更改错误消息而不必更改任何测试。
+
+接下来重构 `RetCalc.nbOfMonthsSavings` 返回 `Either[RetCalcError, Int]` 类型：
+
+``` scala
+  def nbOfMonthsSaving(
+      returns: Returns,
+      params: RetCalcParams
+  ): Either[RetCalcError, Int] = {
+    @tailrec
+    def loop(months: Int): Int = {
+      val (_, capitalAfterDeath) = simulatePlan(
+        returns = returns,
+        params = params,
+        nbOfMonthsSavings = months)
+      if (capitalAfterDeath > 0.0) months else loop(months + 1)
+    }
+    if (params.netIncome > params.currentExpenses) Right(loop(0))
+    else Left(MoreExpensesThanIncome(params.netIncome, params.currentExpenses))
+  }
+```
+
+我们也要改变测试单元。ScalaTest 提供了方便的扩展来执行 `Either` 类型的断言。在 `RetCalcSpec.scala` 扩展 `EitherValues`：
+
+``` scala
+class RetCalcSpec
+    extends AnyWordSpec
+    with Matchers
+    with TypeCheckedTripleEquals
+    with EitherValues {
+    
+    // ...
+
+```
+如果测试中有 `Either[A, B]` 类型的 `myEither` 变量，那么 `EitherValues` 将允许我们使用如下方法：
+- `myEither.left.value` 返回类型为 `A` 的左侧值，或者如果 `myEither` 是 `Right` 的话测试失败。
+- `myEither.right.value` 返回类型为 `B` 的右侧值，或者如果 `myEither` 是 `Left` 的话测试失败。
+
+我们来看测试单元：
+
+``` scala
+
+```
+运行 `sbt test` 测试通过！
 
 # 使用ValidationNel
 

@@ -1,13 +1,15 @@
 package retcalc
 
 import org.scalactic.{TolerantNumerics, TypeCheckedTripleEquals}
+import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class RetCalcSpec
     extends AnyWordSpec
     with Matchers
-    with TypeCheckedTripleEquals {
+    with TypeCheckedTripleEquals
+    with EitherValues {
 
   implicit val doubleEquality =
     TolerantNumerics.tolerantDoubleEquality(0.0001)
@@ -78,35 +80,44 @@ class RetCalcSpec
 
     "nbOfMonthsSaving" should {
       "calculate how long I need to save before I can retire" in {
-        val actual = RetCalc.nbOfMonthsSaving(
-          returns = FixedReturns(0.04),
-          params = params
-        )
+        val actual = RetCalc
+          .nbOfMonthsSaving(
+            returns = FixedReturns(0.04),
+            params = params
+          )
+          .right
+          .value
 
         val excepted = 23 * 12 + 1
-        actual should ===(Some(excepted))
+        actual should ===(excepted)
       }
 
       "not crash if the resulting nbOfMonths is very high" in {
-        val actual = RetCalc.nbOfMonthsSaving(
-          returns = FixedReturns(0.01),
-          params = RetCalcParams(
-            nbOfMonthsInRetirement = 40 * 12,
-            netIncome = 3000,
-            currentExpenses = 2999,
-            initialCapital = 0
+        val actual = RetCalc
+          .nbOfMonthsSaving(
+            returns = FixedReturns(0.01),
+            params = RetCalcParams(
+              nbOfMonthsInRetirement = 40 * 12,
+              netIncome = 3000,
+              currentExpenses = 2999,
+              initialCapital = 0
+            )
           )
-        )
+          .right
+          .value
         val expected = 8280
-        actual should ===(Some(expected))
+        actual should ===(expected)
       }
 
       "not loop forever if I enter bad parameters" in {
-        val actual = RetCalc.nbOfMonthsSaving(
-          FixedReturns(0.04),
-          params = params.copy(netIncome = 1000)
-        )
-        actual should ===(None)
+        val actual = RetCalc
+          .nbOfMonthsSaving(
+            FixedReturns(0.04),
+            params = params.copy(netIncome = 1000)
+          )
+          .left
+          .value
+        actual should ===(RetCalcError.MoreExpensesThanIncome(1000, 2000))
       }
     }
   }
