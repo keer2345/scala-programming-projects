@@ -798,7 +798,48 @@ class RetCalcSpec
 我们来看测试单元：
 
 ``` scala
+"nbOfMonthsSaving" should {
+  "calculate how long I need to save before I can retire" in {
+    val actual = RetCalc
+      .nbOfMonthsSaving(
+        returns = FixedReturns(0.04),
+        params = params
+      )
+      .right
+      .value
 
+    val excepted = 23 * 12 + 1
+    actual should ===(excepted)
+  }
+
+  "not crash if the resulting nbOfMonths is very high" in {
+    val actual = RetCalc
+      .nbOfMonthsSaving(
+        returns = FixedReturns(0.01),
+        params = RetCalcParams(
+          nbOfMonthsInRetirement = 40 * 12,
+          netIncome = 3000,
+          currentExpenses = 2999,
+          initialCapital = 0
+        )
+      )
+      .right
+      .value
+    val expected = 8280
+    actual should ===(expected)
+  }
+
+  "not loop forever if I enter bad parameters" in {
+    val actual = RetCalc
+      .nbOfMonthsSaving(
+        FixedReturns(0.04),
+        params = params.copy(netIncome = 1000)
+      )
+      .left
+      .value
+    actual should ===(RetCalcError.MoreExpensesThanIncome(1000, 2000))
+  }
+}
 ```
 运行 `sbt test` 测试通过！
 
