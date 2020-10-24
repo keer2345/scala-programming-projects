@@ -637,6 +637,102 @@ types Option[Int] and Int do not adhere to the type constraint selected for the 
 到目前为止我们可以建模安全的 Option 值了。然而，有时候 `None` 并不能表达确切的意思，为什么函数返回 `None`？是因为传递的参数是错误的吗？哪个参数错了？正确的应该是什么？为了更好的解释 `None` 是 为了理解为什么没有返回值。在下一节，我们将为此使用 `Either` 类型。
 
 # 使用Either
+`Either` 也是代数数据类型，表示一个值是 `Left` 或 `Right` 类型。简单的定义如下：
+
+``` scala
+scala> sealed trait Either[A, B]
+trait Either
+
+scala> case class Left[A, B](values: A) extends Either[A, B]
+class Left
+
+scala> case class Right[A, B](value: B) extends Either[A, B]
+class Right
+```
+当实例化 `Left` 类型时需要提供一个类型为 `A` 的值，同样实例化 `Right` 类型时需要提一个类型为 `B` 的值。因此，`Either[A, B]` 既可以的值类型既可是 `A` 也可是 `B`。
+
+``` scala
+scala> def divide(x: Double, y: Double): Either[String, Double] = {
+     |   if (y==0)
+     |     Left(s"$x cannot be divided by zero")
+     |   else
+     |     Right(x / y)
+     | }
+def divide(x: Double, y: Double): Either[String,Double]
+
+scala> divide(6, 3)
+val res23: Either[String,Double] = Right(2.0)
+
+scala> divide(6, 0)
+val res24: Either[String,Double] = Left(6.0 cannot be divided by zero)
+```
+函数 `divide` 返回 String 或 Double 类型：
+- 如果函数无法计算，返回 `Left` 类型的错误字符串 `String`。
+- 如果可以计算，返回 `Right` 类型的 `Double` 类型值。
+
+按照惯例，我们使用 `Right` 来表示正确的值，使用 `Left` 表示错误信息。
+
+## 操作Either
+有了 `Either`，我们可以匹配想要的 `Left` 或者 `Right` 类型。
+
+下面修改前面的函数 `personDescription`:
+
+``` scala
+def getPersonAge(name: String, db: Map[String, Int]): Either[String, Int] =
+  db.get(name).toRight(s"$name is not present in db")
+
+def personDescription(name: String, db: Map[String, Int]): String =
+  getPersonAge(name, db) match {
+    case Right(age) => s"$name is $age years old"
+    case Left(error) => error
+  }
+
+val db = Map("John" -> 25, "Rob" -> 40) personDescription("John", db)
+// res4: String = John is 25 years old
+
+personDescription("Michael", db)
+// res5: String = Michael is not present in db
+```
+
+首先函数 `getPersonAge` 创造了 `Right(age)`，如果 `name` 参数在 `db` 中的话。如果 `name` 不在 `db` 里，则返回 `Left` 类型的错误消息。为此，我们使用 `Option.toRight` 方法，我推荐你看一下该方法的文档。
+
+`personDescription` 很明了 —— 匹配 `getPersonAge` 的结果并返回 `Left` 或 `Right` 类型的值。
+
+通过 `Option`，我们可以使用 `map` 和 `flatMap` 来绑定 `Either` 的实例：
+
+``` scala
+def averageAge(name1: String, name2: String, db: Map[String, Int]): Either[String, Double] =
+  getPersonAge(name1, db).flatMap(age1 =>
+    getPersonAge(name2, db).map(age2 =>
+      (age1 + age2).toDouble / 2))
+
+averageAge("John", "Rob", db)
+// res4: Either[String,Double] = Right(32.5)
+averageAge("John", "Michael", db)
+// res5: Either[String,Double] = Left(Michael is not present in db)
+```
+注意函数体几乎与 `Option` 相同，这是因为 `Either`  是**偏右**（right biased）的，意思是 `map` 和 `flatMap` 转换 `Either` 的右侧。
+
+如果想转换 `Either` 的左侧，需要调用 `Either.left` 方法：
+
+``` scala
+getPersonAge("bob", db).left.map(err => s"The error was: $err")
+// res6: scala.util.Either[String,Int] = Left(The error was: bob is not present in db)
+```
+
+由于 `Either` 实现了 `map` 和 `flatMap`， 我们可以通过 `for` 重构 `averageAge`：
+
+``` scala
+def averageAge2(name1: String, name2: String, db: Map[String, Int]): Either[String, Double] =
+  for {
+    age1 <- getPersonAge(name1, db)
+    age2 <- getPersonAge(name2, db)
+  } yield (age1 + age2).toDouble / 2
+```
+
+同样，这代码看起来与 `Option` 一样。
+
+## 使用Either重构退休金计算机项目
 
 # 使用ValidationNel
 
